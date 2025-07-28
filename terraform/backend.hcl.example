@@ -1,0 +1,9 @@
+# Example backend configuration for local development
+# Copy this file to backend.hcl and update with your actual values
+# Get these values from: cd terraform/backend-setup && terraform output
+
+bucket         = "terraform-state-kashedin-XXXXXXXX"  # Replace with actual bucket name
+key            = "dev/terraform.tfstate"              # Or "prod/terraform.tfstate"
+region         = "us-west-2"
+dynamodb_table = "terraform-state-lock-kashedin"
+encrypt        = true
