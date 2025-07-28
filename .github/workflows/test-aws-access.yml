@@ -16,6 +16,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Validate required secrets
+        run: |
+          echo "Checking required secrets..."
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "❌ AWS_ACCESS_KEY_ID secret is missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "❌ AWS_SECRET_ACCESS_KEY secret is missing"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_DEFAULT_REGION }}" ]; then
+            echo "❌ AWS_DEFAULT_REGION secret is missing - add 'us-west-2'"
+            exit 1
+          fi
+          echo "✅ All required secrets are present"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -54,6 +71,19 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Validate backend secrets
+        run: |
+          echo "Checking backend secrets..."
+          if [ -z "${{ secrets.TF_STATE_BUCKET }}" ]; then
+            echo "❌ TF_STATE_BUCKET secret is missing - add 'terraform-state-kashedin-422bf0c7'"
+            exit 1
+          fi
+          if [ -z "${{ secrets.TF_STATE_DYNAMODB_TABLE }}" ]; then
+            echo "❌ TF_STATE_DYNAMODB_TABLE secret is missing - add 'terraform-state-lock-kashedin'"
+            exit 1
+          fi
+          echo "✅ All backend secrets are present"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
