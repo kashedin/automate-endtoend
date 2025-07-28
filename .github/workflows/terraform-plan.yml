@@ -1,0 +1,242 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-*.yml'
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+jobs:
+  terraform-plan-dev:
+    name: Terraform Plan - Development
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init - Development
+      id: init-dev
+      run: |
+        cd terraform/environments/dev
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=dev/terraform.tfstate" \
+          -backend-config="region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+
+    - name: Terraform Plan - Development
+      id: plan-dev
+      run: |
+        cd terraform/environments/dev
+        terraform plan -var-file="terraform.tfvars" -no-color -out=tfplan
+      continue-on-error: true
+
+    - name: Save Plan Output - Development
+      id: plan-output-dev
+      run: |
+        cd terraform/environments/dev
+        terraform show -no-color tfplan > plan_output.txt
+        echo "PLAN_OUTPUT_DEV<<EOF" >> $GITHUB_ENV
+        cat plan_output.txt >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Comment PR - Development Plan
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const output = `#### Terraform Plan - Development Environment 🏗️
+          
+          <details><summary>Show Plan Output</summary>
+          
+          \`\`\`terraform
+          ${{ env.PLAN_OUTPUT_DEV }}
+          \`\`\`
+          
+          </details>
+          
+          *Plan Status: \`${{ steps.plan-dev.outcome }}\`*
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Upload Plan Artifact - Development
+      uses: actions/upload-artifact@v3
+      with:
+        name: terraform-plan-dev
+        path: terraform/environments/dev/tfplan
+        retention-days: 5
+
+  terraform-plan-prod:
+    name: Terraform Plan - Production
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init - Production
+      id: init-prod
+      run: |
+        cd terraform/environments/prod
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=prod/terraform.tfstate" \
+          -backend-config="region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+
+    - name: Terraform Plan - Production
+      id: plan-prod
+      run: |
+        cd terraform/environments/prod
+        terraform plan -var-file="terraform.tfvars" -no-color -out=tfplan
+      continue-on-error: true
+
+    - name: Save Plan Output - Production
+      id: plan-output-prod
+      run: |
+        cd terraform/environments/prod
+        terraform show -no-color tfplan > plan_output.txt
+        echo "PLAN_OUTPUT_PROD<<EOF" >> $GITHUB_ENV
+        cat plan_output.txt >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Comment PR - Production Plan
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const output = `#### Terraform Plan - Production Environment 🚀
+          
+          <details><summary>Show Plan Output</summary>
+          
+          \`\`\`terraform
+          ${{ env.PLAN_OUTPUT_PROD }}
+          \`\`\`
+          
+          </details>
+          
+          *Plan Status: \`${{ steps.plan-prod.outcome }}\`*
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Upload Plan Artifact - Production
+      uses: actions/upload-artifact@v3
+      with:
+        name: terraform-plan-prod
+        path: terraform/environments/prod/tfplan
+        retention-days: 5
+
+  plan-summary:
+    name: Plan Summary
+    runs-on: ubuntu-latest
+    needs: [terraform-plan-dev, terraform-plan-prod]
+    if: always()
+    
+    steps:
+    - name: Comment PR - Summary
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const devStatus = '${{ needs.terraform-plan-dev.result }}';
+          const prodStatus = '${{ needs.terraform-plan-prod.result }}';
+          
+          const devIcon = devStatus === 'success' ? '✅' : devStatus === 'failure' ? '❌' : '⚠️';
+          const prodIcon = prodStatus === 'success' ? '✅' : prodStatus === 'failure' ? '❌' : '⚠️';
+          
+          const output = `## Terraform Plan Summary
+          
+          | Environment | Status | Result |
+          |-------------|--------|--------|
+          | Development | ${devIcon} | \`${devStatus}\` |
+          | Production | ${prodIcon} | \`${prodStatus}\` |
+          
+          ### Next Steps
+          ${devStatus === 'success' && prodStatus === 'success' ? 
+            '🎉 All plans completed successfully! Ready for merge and deployment.' : 
+            '⚠️ Please review the plan outputs above and fix any issues before merging.'}
+          
+          *Generated by GitHub Actions*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+  cost-estimation:
+    name: Cost Estimation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Infracost
+      uses: infracost/actions/setup@v2
+      with:
+        api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+    - name: Generate Infracost cost estimate baseline
+      run: |
+        infracost breakdown --path=terraform/environments/dev \
+                            --format=json \
+                            --out-file=/tmp/infracost-base.json
+
+    - name: Generate Infracost diff
+      run: |
+        infracost diff --path=terraform/environments/dev \
+                       --format=json \
+                       --compare-to=/tmp/infracost-base.json \
+                       --out-file=/tmp/infracost.json
+
+    - name: Post Infracost comment
+      run: |
+        infracost comment github --path=/tmp/infracost.json \
+                                 --repo=$GITHUB_REPOSITORY \
+                                 --github-token=${{github.token}} \
+                                 --pull-request=${{github.event.pull_request.number}} \
+                                 --behavior=update
