@@ -42,7 +42,7 @@ The backend infrastructure has been deployed! Add these secrets:
 gh secret set AWS_ACCESS_KEY_ID --body "ASIA5HZH53W7IQJSEU4U"
 gh secret set AWS_SECRET_ACCESS_KEY --body "qvpMw13yuYU1tH8XshIWoXrnfZGjpY8JHgxUYbNp"
 gh secret set AWS_SESSION_TOKEN --body "IQoJb3JpZ2luX2VjEGUaCXVzLXdlc3QtMiJHMEUCIHBq3GZZBi+I2vIXcuyFDazfEr6Dd5DNkF0uTzLi//eVAiEAobQZA8k1EBT7b7LHp2E19zsoIQhEOQJPUuRCfnnT/4AqrQIIjv//////////ARABGgw5MTAwNzk5NDIwNzgiDADmMoeXidYirOt0piqBArjjKe9q1rqARjc0qp9wmXhOSNv2G8hJgA59DuxT2RdREYGG5myQmqmXSmVxYVqIz4T+agsBXW70YCt0HnUyTyqvIhdNGFj+cdyHvGARyqqBdE5KHI7wW0DZEiS5xhN4Sj/8RXUaCjYntckiXyPcWjTg65NBa0ASp50YSCfJaWYi7fY9Qw7Zp8W4On7QQKBILD5nE/KR5B+Kd8DvrkoFAosc1Fy60Wz1G1c9jpDfQZyekL7k80J6Jvp0m4TdCLsh3hvJ7fjklyhuv6rMf38zvHCHNKL7wSG0r+RsN9aPJgvoPWxtYPBLJC8a5DX2Kt5wq5Jii6ixFfNmUN9CL0u/dImnMO3hncQGOp0BsY1/zlIrrKGONQfVBjnGmAyub9FRRcrP+COR6FORNoIQoC3STtMKAHf1J1yeSP/zRVi0+O9tBpd3nApwXsHdlYUcpmf7ao96h6Gjba/WfgShKKrlqxU7vs9Ngl9/0g8B5TGX1ZK7NcdXhJUKrdMKJKyVFLCVLJhs/meebMlJZGMqMIgavg4WoZLLd229iGdrJxaTCyr7nIiAlIGKLg=="
-gh secret set AWS_DEFAULT_REGION --body "us-west-2"
+gh secret sAWS_DEFAULT_REGION et --body "us-west-2"
 gh secret set DEV_ALERT_EMAILS --body '["kashif.din.1991@gmail.com"]'
 gh secret set PROD_ALERT_EMAILS --body '["kashif.din.1991@gmail.com"]'
 ```
