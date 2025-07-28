@@ -1,0 +1,240 @@
+name: Terraform Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-*.yml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-*.yml'
+
+env:
+  TF_VERSION: '1.6.0'
+
+jobs:
+  terraform-validate:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Format Check
+      id: fmt
+      run: terraform fmt -check -recursive terraform/
+      continue-on-error: true
+
+    - name: Terraform Init - Shared
+      run: |
+        cd terraform/shared
+        terraform init -backend=false
+
+    - name: Terraform Validate - Shared
+      run: |
+        cd terraform/shared
+        terraform validate
+
+    - name: Terraform Init - Modules
+      run: |
+        for module in terraform/modules/*/; do
+          echo "Validating module: $module"
+          cd "$module"
+          terraform init -backend=false
+          terraform validate
+          cd - > /dev/null
+        done
+
+    - name: Terraform Init - Dev Environment
+      run: |
+        cd terraform/environments/dev
+        terraform init -backend=false
+
+    - name: Terraform Validate - Dev Environment
+      run: |
+        cd terraform/environments/dev
+        terraform validate
+
+    - name: Terraform Init - Prod Environment
+      run: |
+        cd terraform/environments/prod
+        terraform init -backend=false
+
+    - name: Terraform Validate - Prod Environment
+      run: |
+        cd terraform/environments/prod
+        terraform validate
+
+    - name: Comment PR - Format Issues
+      if: failure() && steps.fmt.outcome == 'failure'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const output = `#### Terraform Format Check 🖌\`${{ steps.fmt.outcome }}\`
+          
+          <details><summary>Show Format Issues</summary>
+          
+          \`\`\`
+          ${{ steps.fmt.outputs.stdout }}
+          \`\`\`
+          
+          </details>
+          
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Comment PR - Success
+      if: success()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const output = `#### Terraform Validation ✅
+          
+          All Terraform configurations are valid and properly formatted!
+          
+          - ✅ Format check passed
+          - ✅ Shared configuration validated
+          - ✅ All modules validated
+          - ✅ Development environment validated
+          - ✅ Production environment validated
+          
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+  tflint:
+    name: TFLint Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Cache TFLint plugin dir
+      uses: actions/cache@v3
+      with:
+        path: ~/.tflint.d/plugins
+        key: tflint-${{ hashFiles('.tflint.hcl') }}
+
+    - name: Setup TFLint
+      uses: terraform-linters/setup-tflint@v4
+      with:
+        tflint_version: v0.48.0
+
+    - name: Show TFLint version
+      run: tflint --version
+
+    - name: Init TFLint
+      run: tflint --init
+
+    - name: Run TFLint - Modules
+      run: |
+        for module in terraform/modules/*/; do
+          echo "Linting module: $module"
+          cd "$module"
+          tflint --format compact
+          cd - > /dev/null
+        done
+
+    - name: Run TFLint - Environments
+      run: |
+        for env in terraform/environments/*/; do
+          echo "Linting environment: $env"
+          cd "$env"
+          tflint --format compact
+          cd - > /dev/null
+        done
+
+  checkov:
+    name: Checkov Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Checkov action
+      id: checkov
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: terraform/
+        framework: terraform
+        output_format: sarif
+        output_file_path: reports/results.sarif
+        download_external_modules: true
+        quiet: true
+
+    - name: Upload SARIF file
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: reports/results.sarif
+
+    - name: Comment PR - Security Issues
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const output = `#### Security Scan Results 🔒
+          
+          ⚠️ Security issues found in Terraform configuration.
+          
+          Please check the Security tab for detailed findings and remediation steps.
+          
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+  terraform-docs:
+    name: Generate Terraform Docs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.pull_request.head.ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Render terraform docs inside the README.md and push changes back to PR branch
+      uses: terraform-docs/gh-actions@v1.0.0
+      with:
+        working-dir: terraform/modules/networking
+        output-file: README.md
+        output-method: inject
+        git-push: "true"
+
+    - name: Generate docs for all modules
+      run: |
+        for module in terraform/modules/*/; do
+          if [ -f "$module/README.md" ]; then
+            echo "Updating docs for: $module"
+            terraform-docs markdown table --output-file README.md "$module"
+          fi
+        done

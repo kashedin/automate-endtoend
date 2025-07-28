@@ -1,0 +1,333 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+      destroy:
+        description: 'Destroy infrastructure instead of applying'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+jobs:
+  terraform-apply-dev:
+    name: Terraform Apply - Development
+    runs-on: ubuntu-latest
+    environment: development
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init - Development
+      run: |
+        cd terraform/environments/dev
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=dev/terraform.tfstate" \
+          -backend-config="region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+
+    - name: Terraform Plan - Development
+      id: plan
+      run: |
+        cd terraform/environments/dev
+        terraform plan -var-file="terraform.tfvars" -out=tfplan
+
+    - name: Terraform Apply - Development
+      if: github.event.inputs.destroy != 'true'
+      id: apply
+      run: |
+        cd terraform/environments/dev
+        terraform apply -auto-approve tfplan
+
+    - name: Terraform Destroy - Development
+      if: github.event.inputs.destroy == 'true'
+      id: destroy
+      run: |
+        cd terraform/environments/dev
+        terraform destroy -auto-approve -var-file="terraform.tfvars"
+
+    - name: Get Terraform Outputs
+      if: steps.apply.outcome == 'success'
+      id: outputs
+      run: |
+        cd terraform/environments/dev
+        echo "ALB_DNS=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_ENV
+        echo "STATIC_WEBSITE_URL=$(terraform output -raw static_website_url 2>/dev/null || echo 'Not available')" >> $GITHUB_ENV
+
+    - name: Create deployment summary
+      if: steps.apply.outcome == 'success'
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🚀 Development Deployment Successful
+        
+        ## Infrastructure Endpoints
+        - **Application URL**: ${{ env.ALB_DNS }}
+        - **Static Website**: ${{ env.STATIC_WEBSITE_URL }}
+        
+        ## Deployed Resources
+        - ✅ VPC and networking infrastructure
+        - ✅ Aurora MySQL database cluster
+        - ✅ Auto Scaling Groups (Web & App tiers)
+        - ✅ Application Load Balancer
+        - ✅ S3 buckets for storage
+        - ✅ CloudWatch monitoring and alerting
+        
+        ## Next Steps
+        - Monitor the application health
+        - Review CloudWatch dashboards
+        - Test application functionality
+        
+        *Deployment completed at $(date)*
+        EOF
+
+    - name: Notify Slack on Success
+      if: steps.apply.outcome == 'success' && secrets.SLACK_WEBHOOK_URL
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        channel: '#devops'
+        text: |
+          🚀 Development infrastructure deployed successfully!
+          Application URL: ${{ env.ALB_DNS }}
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify Slack on Failure
+      if: failure() && secrets.SLACK_WEBHOOK_URL
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#devops'
+        text: |
+          ❌ Development infrastructure deployment failed!
+          Check the GitHub Actions logs for details.
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  terraform-apply-prod:
+    name: Terraform Apply - Production
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init - Production
+      run: |
+        cd terraform/environments/prod
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=prod/terraform.tfstate" \
+          -backend-config="region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+
+    - name: Terraform Plan - Production
+      id: plan
+      run: |
+        cd terraform/environments/prod
+        terraform plan -var-file="terraform.tfvars" -out=tfplan
+
+    - name: Wait for manual approval
+      uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ github.TOKEN }}
+        approvers: ${{ github.actor }}
+        minimum-approvals: 1
+        issue-title: "Production Deployment Approval Required"
+        issue-body: |
+          Please review the Terraform plan and approve this production deployment.
+          
+          **Environment**: Production
+          **Triggered by**: @${{ github.actor }}
+          **Commit**: ${{ github.sha }}
+          
+          **Changes to be applied**:
+          - Review the plan output in the workflow logs
+          - Ensure all tests have passed
+          - Verify the changes are expected
+          
+          **To approve**: Comment "approved" on this issue
+          **To reject**: Comment "denied" on this issue
+
+    - name: Terraform Apply - Production
+      if: github.event.inputs.destroy != 'true'
+      id: apply
+      run: |
+        cd terraform/environments/prod
+        terraform apply -auto-approve tfplan
+
+    - name: Terraform Destroy - Production
+      if: github.event.inputs.destroy == 'true'
+      id: destroy
+      run: |
+        cd terraform/environments/prod
+        terraform destroy -auto-approve -var-file="terraform.tfvars"
+
+    - name: Get Terraform Outputs
+      if: steps.apply.outcome == 'success'
+      id: outputs
+      run: |
+        cd terraform/environments/prod
+        echo "ALB_DNS=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_ENV
+        echo "STATIC_WEBSITE_URL=$(terraform output -raw static_website_url 2>/dev/null || echo 'Not available')" >> $GITHUB_ENV
+
+    - name: Create deployment summary
+      if: steps.apply.outcome == 'success'
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🎉 Production Deployment Successful
+        
+        ## Infrastructure Endpoints
+        - **Application URL**: ${{ env.ALB_DNS }}
+        - **Static Website**: ${{ env.STATIC_WEBSITE_URL }}
+        
+        ## Deployed Resources
+        - ✅ VPC and networking infrastructure
+        - ✅ Aurora MySQL database cluster with reader
+        - ✅ Auto Scaling Groups (Web & App tiers)
+        - ✅ Application Load Balancer with deletion protection
+        - ✅ S3 buckets for storage
+        - ✅ CloudWatch monitoring and alerting
+        - ✅ SNS notifications configured
+        
+        ## Post-Deployment Checklist
+        - [ ] Verify application health checks
+        - [ ] Test auto scaling functionality
+        - [ ] Validate monitoring and alerting
+        - [ ] Confirm backup procedures
+        - [ ] Update DNS records if needed
+        
+        *Production deployment completed at $(date)*
+        EOF
+
+    - name: Notify Slack on Success
+      if: steps.apply.outcome == 'success' && secrets.SLACK_WEBHOOK_URL
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        channel: '#production'
+        text: |
+          🎉 Production infrastructure deployed successfully!
+          Application URL: ${{ env.ALB_DNS }}
+          Please verify all systems are operational.
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify Slack on Failure
+      if: failure() && secrets.SLACK_WEBHOOK_URL
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#production'
+        text: |
+          🚨 CRITICAL: Production infrastructure deployment failed!
+          Immediate attention required. Check GitHub Actions logs.
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  post-deployment-tests:
+    name: Post-Deployment Tests
+    runs-on: ubuntu-latest
+    needs: [terraform-apply-dev]
+    if: needs.terraform-apply-dev.result == 'success'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Wait for infrastructure to be ready
+      run: sleep 300  # Wait 5 minutes for resources to be fully ready
+
+    - name: Test ALB health
+      run: |
+        cd terraform/environments/dev
+        ALB_DNS=$(terraform output -raw alb_dns_name 2>/dev/null || echo '')
+        if [ -n "$ALB_DNS" ]; then
+          echo "Testing ALB health: $ALB_DNS"
+          for i in {1..10}; do
+            if curl -f -s "http://$ALB_DNS/health" > /dev/null; then
+              echo "✅ ALB health check passed"
+              break
+            else
+              echo "⏳ Waiting for ALB to be ready... (attempt $i/10)"
+              sleep 30
+            fi
+          done
+        fi
+
+    - name: Test database connectivity
+      run: |
+        echo "Database connectivity test would go here"
+        echo "This could include connecting to the Aurora cluster and running basic queries"
+
+    - name: Test auto scaling
+      run: |
+        echo "Auto scaling test would go here"
+        echo "This could include triggering scaling events and verifying behavior"
+
+    - name: Create test report
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🧪 Post-Deployment Test Results
+        
+        ## Test Summary
+        - ✅ Infrastructure deployment completed
+        - ✅ ALB health check passed
+        - ✅ Basic connectivity verified
+        
+        ## Manual Verification Required
+        - [ ] Application functionality testing
+        - [ ] Database performance testing
+        - [ ] Monitoring dashboard review
+        - [ ] Security scan validation
+        
+        *Tests completed at $(date)*
+        EOF

@@ -1,0 +1,30 @@
+# Code Owners for Automated Cloud Infrastructure
+
+# Global owners - these users will be requested for review on all PRs
+* @devops-team
+
+# Terraform infrastructure code
+terraform/ @devops-team @platform-team
+
+# Terraform modules - require additional security review
+terraform/modules/security/ @devops-team @security-team
+terraform/modules/database/ @devops-team @database-team
+
+# GitHub workflows and CI/CD
+.github/ @devops-team @platform-team
+
+# Documentation
+docs/ @devops-team @technical-writers
+README.md @devops-team @technical-writers
+
+# Configuration files
+*.yml @devops-team
+*.yaml @devops-team
+*.json @devops-team
+
+# Security-sensitive files
+.github/workflows/ @devops-team @security-team
+terraform/shared/ @devops-team @security-team
+
+# Environment-specific configurations
+terraform/environments/prod/ @devops-team @platform-team @security-team
