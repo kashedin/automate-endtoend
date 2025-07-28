@@ -1,4 +1,4 @@
-# Terraform Backend Infrastructure Setup
+# Simplified Terraform Backend Infrastructure Setup for Lab Environment
 # This creates the S3 bucket and DynamoDB table needed for Terraform state management
 
 terraform {
@@ -33,38 +33,18 @@ resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
-# S3 bucket for Terraform state
+# S3 bucket for Terraform state (simplified for lab environment)
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "terraform-state-kashedin-${random_id.bucket_suffix.hex}"
+  bucket        = "terraform-state-kashedin-${random_id.bucket_suffix.hex}"
+  force_destroy = true
 }
 
-# S3 bucket versioning
+# S3 bucket versioning (separate resource for better compatibility)
 resource "aws_s3_bucket_versioning" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
   versioning_configuration {
     status = "Enabled"
   }
-}
-
-# S3 bucket encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-# S3 bucket public access block
-resource "aws_s3_bucket_public_access_block" "terraform_state" {
-  bucket = aws_s3_bucket.terraform_state.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
 }
 
 # DynamoDB table for state locking
@@ -82,42 +62,4 @@ resource "aws_dynamodb_table" "terraform_state_lock" {
     Name        = "terraform-state-lock-kashedin"
     Description = "DynamoDB table for Terraform state locking"
   }
-}
-
-# IAM policy for Terraform backend access
-resource "aws_iam_policy" "terraform_backend_policy" {
-  name        = "TerraformBackendAccess"
-  description = "Policy for Terraform backend S3 and DynamoDB access"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket",
-          "s3:GetBucketVersioning"
-        ]
-        Resource = aws_s3_bucket.terraform_state.arn
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject"
-        ]
-        Resource = "${aws_s3_bucket.terraform_state.arn}/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:DeleteItem"
-        ]
-        Resource = aws_dynamodb_table.terraform_state_lock.arn
-      }
-    ]
-  })
 }
