@@ -4,7 +4,7 @@ This file triggers the automatic deployment workflow.
 
 **Deployment initiated at**: $(date)
 **Environment**: Development (auto)
-**Trigger**: Push to main branch
+**Trigger**: Push to master branch
 
 ## What will be deployed:
 - ✅ VPC with 3-tier architecture

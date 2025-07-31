@@ -1,4 +1,5 @@
 # Development Environment Configuration
+# Auto-deploy trigger: Updated for master branch compatibility
 
 # Include shared provider and backend configuration
 terraform {
