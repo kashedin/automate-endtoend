@@ -111,29 +111,12 @@ jobs:
         *Deployment completed at $(date)*
         EOF
 
-    - name: Notify Slack on Success
+    - name: Deployment Complete
       if: steps.apply.outcome == 'success'
-      uses: 8398a7/action-slack@v3
-      continue-on-error: true
-      with:
-        status: success
-        channel: '#devops'
-        text: |
-          🚀 Development infrastructure deployed successfully!
-          Application URL: ${{ env.ALB_DNS }}
-        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-    - name: Notify Slack on Failure
-      if: failure()
-      uses: 8398a7/action-slack@v3
-      continue-on-error: true
-      with:
-        status: failure
-        channel: '#devops'
-        text: |
-          ❌ Development infrastructure deployment failed!
-          Check the GitHub Actions logs for details.
-        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        echo "🚀 Development infrastructure deployed successfully!"
+        echo "Application URL: ${{ env.ALB_DNS }}"
+        echo "Static Website: ${{ env.STATIC_WEBSITE_URL }}"
 
   terraform-apply-prod:
     name: Terraform Apply - Production
@@ -245,30 +228,13 @@ jobs:
         *Production deployment completed at $(date)*
         EOF
 
-    - name: Notify Slack on Success
+    - name: Production Deployment Complete
       if: steps.apply.outcome == 'success'
-      uses: 8398a7/action-slack@v3
-      continue-on-error: true
-      with:
-        status: success
-        channel: '#production'
-        text: |
-          🎉 Production infrastructure deployed successfully!
-          Application URL: ${{ env.ALB_DNS }}
-          Please verify all systems are operational.
-        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-    - name: Notify Slack on Failure
-      if: failure()
-      uses: 8398a7/action-slack@v3
-      continue-on-error: true
-      with:
-        status: failure
-        channel: '#production'
-        text: |
-          🚨 CRITICAL: Production infrastructure deployment failed!
-          Immediate attention required. Check GitHub Actions logs.
-        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        echo "🎉 Production infrastructure deployed successfully!"
+        echo "Application URL: ${{ env.ALB_DNS }}"
+        echo "Static Website: ${{ env.STATIC_WEBSITE_URL }}"
+        echo "Please verify all systems are operational."
 
   post-deployment-tests:
     name: Post-Deployment Tests
