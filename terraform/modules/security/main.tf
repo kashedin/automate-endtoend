@@ -293,18 +293,6 @@ resource "aws_ssm_parameter" "app_config" {
   })
 }
 
-variable "security_rules" {
-  description = "List of additional security group rules"
-  type        = list(object({
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr_blocks = list(string)
-    description = string
-  }))
-  default = []
-}
-
 resource "aws_vpc_security_group_ingress_rule" "custom_rules" {
   for_each = { for idx, rule in var.security_rules : idx => rule }
   security_group_id = aws_security_group.web.id
