@@ -1,0 +1,39 @@
+Terraform Apply - Development
+failed in 16 seconds in 8s
+Search logs
+3s
+Current runner version: '2.327.1'
+Runner Image Provisioner
+Operating System
+Runner Image
+GITHUB_TOKEN Permissions
+Secret source: Actions
+Prepare workflow directory
+Prepare all required actions
+Getting action download info
+Download immutable action package 'actions/checkout@v4'
+Download action repository 'aws-actions/configure-aws-credentials@v4' (SHA:e3dd6a429d7300a6a4c196c26e071d42e0343502)
+Download action repository 'hashicorp/setup-terraform@v3' (SHA:b9cd54a3c349d3f38e8881555d616ced269862dd)
+Complete job name: Terraform Apply - Development
+1s
+From https://github.com/kashedin/automate-endtoend
+ * [new ref]         c45e923a8e11895ed9e32d881f3f4b8862f57330 -> origin/master
+
+Determining the checkout info
+/usr/bin/git sparse-checkout disable
+/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Checking out the ref
+/usr/bin/git log -1 --format=%H
+c45e923a8e11895ed9e32d881f3f4b8862f57330
+0s
+Run aws-actions/configure-aws-credentials@v4
+  with:
+    aws-access-key-id: ***
+    aws-secret-access-key: ***
+    aws-region: ***
+    audience: sts.amazonaws.com
+  env:
+    TF_VERSION: 1.6.0
+    AWS_DEFAULT_REGION: ***
+  
+Error: The security token included in the request is invalid.
