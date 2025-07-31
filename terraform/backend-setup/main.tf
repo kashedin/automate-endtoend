@@ -30,13 +30,21 @@ provider "aws" {
 
 # Generate random suffix for unique bucket naming
 resource "random_id" "bucket_suffix" {
-  byte_length = 4
+  byte_length = 8
+  keepers = {
+    timestamp = timestamp()
+  }
 }
 
 # S3 bucket for Terraform state (simplified for lab environment)
 resource "aws_s3_bucket" "terraform_state" {
   bucket        = "terraform-state-kashedin-${random_id.bucket_suffix.hex}"
   force_destroy = true
+  
+  # Skip object lock configuration for lab environment
+  lifecycle {
+    ignore_changes = [object_lock_configuration]
+  }
 }
 
 # S3 bucket versioning (separate resource for better compatibility)
