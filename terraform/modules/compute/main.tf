@@ -191,8 +191,7 @@ resource "aws_autoscaling_group" "app" {
     create_before_destroy = true
   }
 }
-# App
-lication Load Balancer
+# Application Load Balancer
 resource "aws_lb" "main" {
   name               = "${var.environment}-alb"
   internal           = false
