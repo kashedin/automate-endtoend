@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -107,12 +111,13 @@ resource "aws_vpc_security_group_ingress_rule" "web_http_from_alb" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "web_ssh" {
+  count             = var.enable_ssh_access ? length(var.allowed_ssh_cidrs) : 0
   security_group_id = aws_security_group.web.id
-  description       = "SSH from VPC"
+  description       = "SSH from allowed CIDRs"
   from_port         = 22
   to_port           = 22
   ip_protocol       = "tcp"
-  cidr_ipv4         = var.vpc_cidr
+  cidr_ipv4         = var.allowed_ssh_cidrs[count.index]
 }
 
 # Web Tier Egress Rules
@@ -286,4 +291,26 @@ resource "aws_ssm_parameter" "app_config" {
   tags = merge(var.common_tags, {
     Name = "${var.environment}-app-${each.key}"
   })
+}
+
+variable "security_rules" {
+  description = "List of additional security group rules"
+  type        = list(object({
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = list(string)
+    description = string
+  }))
+  default = []
+}
+
+resource "aws_vpc_security_group_ingress_rule" "custom_rules" {
+  for_each = { for idx, rule in var.security_rules : idx => rule }
+  security_group_id = aws_security_group.web.id
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  ip_protocol       = each.value.protocol
+  cidr_ipv4         = each.value.cidr_blocks[0]
+  description       = each.value.description
 }
