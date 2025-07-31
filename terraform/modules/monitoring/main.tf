@@ -203,7 +203,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_high_response_time" {
   namespace           = "AWS/ApplicationELB"
   period              = "300"
   statistic           = "Average"
-  threshold           = "1.0"
+  threshold           = var.alarm_thresholds.alb_response_time_threshold
   alarm_description   = "This metric monitors ALB response time"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
@@ -226,7 +226,7 @@ resource "aws_cloudwatch_metric_alarm" "alb_high_5xx_errors" {
   namespace           = "AWS/ApplicationELB"
   period              = "300"
   statistic           = "Sum"
-  threshold           = "10"
+  threshold           = var.alarm_thresholds.alb_5xx_error_threshold
   alarm_description   = "This metric monitors ALB 5XX errors"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
@@ -249,7 +249,7 @@ resource "aws_cloudwatch_metric_alarm" "web_high_cpu" {
   namespace           = "AWS/EC2"
   period              = "300"
   statistic           = "Average"
-  threshold           = "80"
+  threshold           = var.alarm_thresholds.ec2_cpu_high_threshold
   alarm_description   = "This metric monitors web tier CPU utilization"
   alarm_actions       = [aws_sns_topic.alerts.arn, var.web_scale_up_policy_arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
@@ -272,7 +272,7 @@ resource "aws_cloudwatch_metric_alarm" "web_low_cpu" {
   namespace           = "AWS/EC2"
   period              = "300"
   statistic           = "Average"
-  threshold           = "20"
+  threshold           = var.alarm_thresholds.ec2_cpu_low_threshold
   alarm_description   = "This metric monitors web tier CPU utilization for scale down"
   alarm_actions       = [var.web_scale_down_policy_arn]
 
@@ -294,7 +294,7 @@ resource "aws_cloudwatch_metric_alarm" "app_high_cpu" {
   namespace           = "AWS/EC2"
   period              = "300"
   statistic           = "Average"
-  threshold           = "80"
+  threshold           = var.alarm_thresholds.ec2_cpu_high_threshold
   alarm_description   = "This metric monitors app tier CPU utilization"
   alarm_actions       = [aws_sns_topic.alerts.arn, var.app_scale_up_policy_arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
@@ -317,7 +317,7 @@ resource "aws_cloudwatch_metric_alarm" "app_low_cpu" {
   namespace           = "AWS/EC2"
   period              = "300"
   statistic           = "Average"
-  threshold           = "20"
+  threshold           = var.alarm_thresholds.ec2_cpu_low_threshold
   alarm_description   = "This metric monitors app tier CPU utilization for scale down"
   alarm_actions       = [var.app_scale_down_policy_arn]
 
@@ -339,7 +339,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
   namespace           = "AWS/RDS"
   period              = "300"
   statistic           = "Average"
-  threshold           = "80"
+  threshold           = var.alarm_thresholds.rds_cpu_threshold
   alarm_description   = "This metric monitors RDS CPU utilization"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
@@ -362,7 +362,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_connections" {
   namespace           = "AWS/RDS"
   period              = "300"
   statistic           = "Average"
-  threshold           = "80"
+  threshold           = var.alarm_thresholds.rds_connections_threshold
   alarm_description   = "This metric monitors RDS database connections"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
@@ -385,7 +385,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_read_latency" {
   namespace           = "AWS/RDS"
   period              = "300"
   statistic           = "Average"
-  threshold           = "0.2"
+  threshold           = var.alarm_thresholds.rds_read_latency_threshold
   alarm_description   = "This metric monitors RDS read latency"
   alarm_actions       = [aws_sns_topic.alerts.arn]
   ok_actions          = [aws_sns_topic.alerts.arn]
