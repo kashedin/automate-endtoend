@@ -31,42 +31,6 @@ resource "aws_security_group" "alb" {
   vpc_id      = var.vpc_id
   description = "Security group for Application Load Balancer"
 
-  # HTTP access from internet
-  ingress {
-    description = "HTTP from internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTPS access from internet
-  ingress {
-    description = "HTTPS from internet"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTP outbound to web tier
-  egress {
-    description     = "HTTP to web tier"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web.id]
-  }
-
-  # HTTPS outbound to web tier
-  egress {
-    description     = "HTTPS to web tier"
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web.id]
-  }
-
   tags = merge(var.common_tags, {
     Name = "${var.environment}-alb-sg"
     Tier = "Public"
@@ -77,56 +41,49 @@ resource "aws_security_group" "alb" {
   }
 }
 
+# ALB Ingress Rules
+resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTP from internet"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_https" {
+  security_group_id = aws_security_group.alb.id
+  description       = "HTTPS from internet"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+# ALB Egress Rules
+resource "aws_vpc_security_group_egress_rule" "alb_to_web_http" {
+  security_group_id            = aws_security_group.alb.id
+  description                  = "HTTP to web tier"
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.web.id
+}
+
+resource "aws_vpc_security_group_egress_rule" "alb_to_web_https" {
+  security_group_id            = aws_security_group.alb.id
+  description                  = "HTTPS to web tier"
+  from_port                    = 443
+  to_port                      = 443
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.web.id
+}
+
 # Security Group for Web Tier
 resource "aws_security_group" "web" {
   name_prefix = "${var.environment}-web-"
   vpc_id      = var.vpc_id
   description = "Security group for Web tier instances"
-
-  # HTTP access from ALB only
-  ingress {
-    description     = "HTTP from ALB"
-    from_port       = 80
-    to_port         = 80
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  # SSH access from bastion (if needed)
-  ingress {
-    description = "SSH from VPC"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
-  # HTTP outbound to app tier
-  egress {
-    description     = "HTTP to app tier"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app.id]
-  }
-
-  # HTTPS outbound for updates
-  egress {
-    description = "HTTPS for updates"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTP outbound for updates
-  egress {
-    description = "HTTP for updates"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-web-sg"
@@ -138,56 +95,58 @@ resource "aws_security_group" "web" {
   }
 }
 
+# Web Tier Ingress Rules
+resource "aws_vpc_security_group_ingress_rule" "web_http_from_alb" {
+  security_group_id            = aws_security_group.web.id
+  description                  = "HTTP from ALB"
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.alb.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "web_ssh" {
+  security_group_id = aws_security_group.web.id
+  description       = "SSH from VPC"
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = var.vpc_cidr
+}
+
+# Web Tier Egress Rules
+resource "aws_vpc_security_group_egress_rule" "web_https_updates" {
+  security_group_id = aws_security_group.web.id
+  description       = "HTTPS for updates"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "web_http_updates" {
+  security_group_id = aws_security_group.web.id
+  description       = "HTTP for updates"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "web_to_app" {
+  security_group_id            = aws_security_group.web.id
+  description                  = "HTTP to app tier"
+  from_port                    = 8080
+  to_port                      = 8080
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app.id
+}
+
 # Security Group for App Tier
 resource "aws_security_group" "app" {
   name_prefix = "${var.environment}-app-"
   vpc_id      = var.vpc_id
   description = "Security group for App tier instances"
-
-  # Application port access from Web tier only
-  ingress {
-    description     = "App port from Web tier"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.web.id]
-  }
-
-  # SSH access from VPC
-  ingress {
-    description = "SSH from VPC"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
-  # MySQL outbound to database
-  egress {
-    description     = "MySQL to database"
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.database.id]
-  }
-
-  # HTTPS outbound for updates
-  egress {
-    description = "HTTPS for updates"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # HTTP outbound for updates
-  egress {
-    description = "HTTP for updates"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-app-sg"
@@ -199,29 +158,58 @@ resource "aws_security_group" "app" {
   }
 }
 
+# App Tier Ingress Rules
+resource "aws_vpc_security_group_ingress_rule" "app_from_web" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "App port from Web tier"
+  from_port                    = 8080
+  to_port                      = 8080
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.web.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "app_ssh" {
+  security_group_id = aws_security_group.app.id
+  description       = "SSH from VPC"
+  from_port         = 22
+  to_port           = 22
+  ip_protocol       = "tcp"
+  cidr_ipv4         = var.vpc_cidr
+}
+
+# App Tier Egress Rules
+resource "aws_vpc_security_group_egress_rule" "app_https_updates" {
+  security_group_id = aws_security_group.app.id
+  description       = "HTTPS for updates"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_http_updates" {
+  security_group_id = aws_security_group.app.id
+  description       = "HTTP for updates"
+  from_port         = 80
+  to_port           = 80
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+
+resource "aws_vpc_security_group_egress_rule" "app_to_database" {
+  security_group_id            = aws_security_group.app.id
+  description                  = "MySQL to database"
+  from_port                    = 3306
+  to_port                      = 3306
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.database.id
+}
+
 # Security Group for Database (Aurora)
 resource "aws_security_group" "database" {
   name_prefix = "${var.environment}-db-"
   vpc_id      = var.vpc_id
   description = "Security group for Aurora database cluster"
-
-  # MySQL access from App tier only
-  ingress {
-    description     = "MySQL from App tier"
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.app.id]
-  }
-
-  # No outbound rules needed for database
-  egress {
-    description = "No outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = []
-  }
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-database-sg"
@@ -231,6 +219,16 @@ resource "aws_security_group" "database" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+# Database Ingress Rules
+resource "aws_vpc_security_group_ingress_rule" "database_from_app" {
+  security_group_id            = aws_security_group.database.id
+  description                  = "MySQL from App tier"
+  from_port                    = 3306
+  to_port                      = 3306
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = aws_security_group.app.id
 }
 
 # Random password for database
