@@ -107,10 +107,6 @@ resource "aws_cloudwatch_dashboard" "infrastructure" {
       }
     ]
   })
-
-  tags = merge(var.common_tags, {
-    Name = "${var.environment}-infrastructure-dashboard"
-  })
 }
 
 # CloudWatch Dashboard for Application Performance
@@ -146,10 +142,6 @@ resource "aws_cloudwatch_dashboard" "application" {
         }
       }
     ]
-  })
-
-  tags = merge(var.common_tags, {
-    Name = "${var.environment}-application-dashboard"
   })
 }
 
