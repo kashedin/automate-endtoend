@@ -197,8 +197,9 @@ resource "aws_cloudwatch_log_group" "app_logs" {
   tags = merge(var.common_tags, {
     Name = "${var.environment}-app-logs"
   })
-}# 
-CloudWatch Alarms
+}
+
+# CloudWatch Alarms
 
 # ALB High Response Time Alarm
 resource "aws_cloudwatch_metric_alarm" "alb_high_response_time" {
