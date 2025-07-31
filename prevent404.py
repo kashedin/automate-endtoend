@@ -21,12 +21,11 @@ def update_workflow_file(filepath):
         if re.match(r'^- name:', stripped):
             # If previous step needs fixing, insert/replace if condition
             if in_github_script_step and uses_github_script and create_comment_found:
-                print(f"[DEBUG] Found github-script step with createComment in {filepath} at line {step_start+1}")
                 if not has_if_condition:
-                    print(f"[DEBUG] Inserting if condition at line {step_start+2}")
+                    # Insert the if condition after the step name
                     new_lines.insert(step_start + 1, '  ' * (lines[step_start].count('  ') + 1) + CONDITION + '\n')
                 else:
-                    print(f"[DEBUG] Replacing existing if condition in {filepath} (lines {step_start+2} to {i})")
+                    # Replace existing if condition
                     for j in range(step_start + 1, i):
                         if lines[j].strip().startswith('if:'):
                             indent = '  ' * (lines[j].count('  '))
@@ -41,12 +40,10 @@ def update_workflow_file(filepath):
         if in_github_script_step:
             if 'uses:' in stripped and 'actions/github-script' in stripped:
                 uses_github_script = True
-                print(f"[DEBUG] Detected uses: actions/github-script in {filepath} at line {i+1}")
             if stripped.startswith('if:'):
                 has_if_condition = True
             if 'github.rest.issues.createComment' in stripped:
                 create_comment_found = True
-                print(f"[DEBUG] Detected github.rest.issues.createComment in {filepath} at line {i+1}")
         new_lines.append(line)
 
     # Handle last step in file
