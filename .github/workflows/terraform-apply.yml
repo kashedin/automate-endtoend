@@ -112,8 +112,9 @@ jobs:
         EOF
 
     - name: Notify Slack on Success
-      if: steps.apply.outcome == 'success' && secrets.SLACK_WEBHOOK_URL
+      if: steps.apply.outcome == 'success'
       uses: 8398a7/action-slack@v3
+      continue-on-error: true
       with:
         status: success
         channel: '#devops'
@@ -123,8 +124,9 @@ jobs:
         webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     - name: Notify Slack on Failure
-      if: failure() && secrets.SLACK_WEBHOOK_URL
+      if: failure()
       uses: 8398a7/action-slack@v3
+      continue-on-error: true
       with:
         status: failure
         channel: '#devops'
@@ -244,8 +246,9 @@ jobs:
         EOF
 
     - name: Notify Slack on Success
-      if: steps.apply.outcome == 'success' && secrets.SLACK_WEBHOOK_URL
+      if: steps.apply.outcome == 'success'
       uses: 8398a7/action-slack@v3
+      continue-on-error: true
       with:
         status: success
         channel: '#production'
@@ -256,8 +259,9 @@ jobs:
         webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     - name: Notify Slack on Failure
-      if: failure() && secrets.SLACK_WEBHOOK_URL
+      if: failure()
       uses: 8398a7/action-slack@v3
+      continue-on-error: true
       with:
         status: failure
         channel: '#production'
