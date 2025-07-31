@@ -1,6 +1,19 @@
 # Storage Module - S3 Buckets
 # This module creates S3 buckets for application storage
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
+  }
+}
+
 # Random ID for unique bucket naming
 resource "random_id" "bucket_suffix" {
   byte_length = 8

@@ -1,6 +1,15 @@
 # Compute Module - EC2, Auto Scaling Groups, Application Load Balancer
 # This module creates the compute infrastructure
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # Data source for latest Amazon Linux 2023 AMI
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -28,6 +37,12 @@ resource "aws_launch_template" "web" {
 
   iam_instance_profile {
     name = var.instance_profile_name
+  }
+
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+    http_put_response_hop_limit = 1
   }
 
   user_data = base64encode(templatefile("${path.module}/user_data/web_user_data.sh", {
@@ -71,6 +86,12 @@ resource "aws_launch_template" "app" {
 
   iam_instance_profile {
     name = var.instance_profile_name
+  }
+
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required"
+    http_put_response_hop_limit = 1
   }
 
   user_data = base64encode(templatefile("${path.module}/user_data/app_user_data.sh", {
@@ -200,6 +221,13 @@ resource "aws_lb" "main" {
   subnets            = var.public_subnet_ids
 
   enable_deletion_protection = var.enable_deletion_protection
+  drop_invalid_header_fields = true
+
+  access_logs {
+    bucket  = var.alb_logs_bucket
+    prefix  = "alb-logs"
+    enabled = true
+  }
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-alb"

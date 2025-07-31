@@ -107,4 +107,9 @@ variable "app_asg_config" {
     max_size         = 3
     desired_capacity = 2
   }
+}variab
+le "alb_logs_bucket" {
+  description = "S3 bucket for ALB access logs"
+  type        = string
+  default     = ""
 }

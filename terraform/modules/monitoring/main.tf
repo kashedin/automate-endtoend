@@ -1,6 +1,15 @@
 # Monitoring Module - CloudWatch Dashboards, Alarms, SNS
 # This module creates comprehensive monitoring and alerting
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # CloudWatch Dashboard for Infrastructure Overview
 resource "aws_cloudwatch_dashboard" "infrastructure" {
   dashboard_name = "${var.environment}-infrastructure-dashboard"

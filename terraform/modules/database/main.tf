@@ -1,6 +1,19 @@
 # Database Module - Aurora MySQL Cluster
 # This module creates Aurora MySQL cluster with high availability
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
+  }
+}
+
 # DB Subnet Group
 resource "aws_db_subnet_group" "aurora" {
   name       = "${var.environment}-aurora-subnet-group"
@@ -77,6 +90,7 @@ resource "aws_rds_cluster" "aurora" {
   skip_final_snapshot            = var.aurora_config.skip_final_snapshot
   final_snapshot_identifier      = var.aurora_config.skip_final_snapshot ? null : "${var.environment}-aurora-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
   copy_tags_to_snapshot          = var.aurora_config.copy_tags_to_snapshot
+  iam_database_authentication_enabled = true
 
   # Enable logging
   enabled_cloudwatch_logs_exports = ["audit", "error", "general", "slowquery"]
@@ -101,6 +115,7 @@ resource "aws_rds_cluster_instance" "aurora_writer" {
   monitoring_interval         = var.aurora_config.monitoring_interval
   monitoring_role_arn         = var.monitoring_role_arn
   performance_insights_enabled = var.aurora_config.performance_insights_enabled
+  performance_insights_kms_key_id = var.kms_key_id
   auto_minor_version_upgrade  = true
 
   tags = merge(var.common_tags, {

@@ -1,6 +1,15 @@
 # Security Module - IAM Roles, Security Groups, Parameter Store
 # This module creates security infrastructure using existing lab role
 
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # Data source for existing lab role
 data "aws_iam_role" "lab_role" {
   name = var.lab_role_name
