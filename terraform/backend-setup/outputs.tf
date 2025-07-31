@@ -34,7 +34,7 @@ output "backend_config" {
 # Output the backend configuration as a formatted string
 output "backend_config_hcl" {
   description = "Backend configuration in HCL format"
-  value = <<-EOT
+  value       = <<-EOT
 terraform {
   backend "s3" {
     bucket         = "${aws_s3_bucket.terraform_state.bucket}"

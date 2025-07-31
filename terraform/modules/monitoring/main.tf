@@ -123,9 +123,9 @@ resource "aws_cloudwatch_dashboard" "application" {
         height = 6
 
         properties = {
-          query   = "SOURCE '/aws/ec2/${var.environment}/web/httpd/access' | fields @timestamp, @message | sort @timestamp desc | limit 100"
-          region  = data.aws_region.current.name
-          title   = "Recent Web Server Access Logs"
+          query  = "SOURCE '/aws/ec2/${var.environment}/web/httpd/access' | fields @timestamp, @message | sort @timestamp desc | limit 100"
+          region = data.aws_region.current.name
+          title  = "Recent Web Server Access Logs"
         }
       },
       {
@@ -136,9 +136,9 @@ resource "aws_cloudwatch_dashboard" "application" {
         height = 6
 
         properties = {
-          query   = "SOURCE '/aws/ec2/${var.environment}/app/application' | fields @timestamp, @message | sort @timestamp desc | limit 100"
-          region  = data.aws_region.current.name
-          title   = "Recent Application Logs"
+          query  = "SOURCE '/aws/ec2/${var.environment}/app/application' | fields @timestamp, @message | sort @timestamp desc | limit 100"
+          region = data.aws_region.current.name
+          title  = "Recent Application Logs"
         }
       }
     ]

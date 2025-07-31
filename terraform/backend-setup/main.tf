@@ -17,7 +17,7 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  
+
   default_tags {
     tags = {
       Project     = "automated-cloud-infrastructure"
@@ -57,7 +57,7 @@ resource "aws_kms_alias" "terraform_state" {
 resource "aws_s3_bucket" "terraform_state" {
   bucket        = "terraform-state-kashedin-${random_id.bucket_suffix.hex}"
   force_destroy = true
-  
+
   # Skip object lock configuration for lab environment
   lifecycle {
     ignore_changes = [object_lock_configuration]
@@ -74,9 +74,9 @@ resource "aws_s3_bucket_versioning" "terraform_state" {
 
 # DynamoDB table for state locking
 resource "aws_dynamodb_table" "terraform_state_lock" {
-  name           = "terraform-state-lock-kashedin"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "LockID"
+  name         = "terraform-state-lock-kashedin"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "LockID"
 
   attribute {
     name = "LockID"

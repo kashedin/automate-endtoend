@@ -67,22 +67,22 @@ variable "common_tags" {
 variable "alarm_thresholds" {
   description = "CloudWatch alarm thresholds"
   type = object({
-    alb_response_time_threshold    = number
-    alb_5xx_error_threshold       = number
-    ec2_cpu_high_threshold        = number
-    ec2_cpu_low_threshold         = number
-    rds_cpu_threshold             = number
-    rds_connections_threshold     = number
-    rds_read_latency_threshold    = number
+    alb_response_time_threshold = number
+    alb_5xx_error_threshold     = number
+    ec2_cpu_high_threshold      = number
+    ec2_cpu_low_threshold       = number
+    rds_cpu_threshold           = number
+    rds_connections_threshold   = number
+    rds_read_latency_threshold  = number
   })
-  
+
   default = {
-    alb_response_time_threshold    = 1.0
-    alb_5xx_error_threshold       = 10
-    ec2_cpu_high_threshold        = 80
-    ec2_cpu_low_threshold         = 20
-    rds_cpu_threshold             = 80
-    rds_connections_threshold     = 80
-    rds_read_latency_threshold    = 0.2
+    alb_response_time_threshold = 1.0
+    alb_5xx_error_threshold     = 10
+    ec2_cpu_high_threshold      = 80
+    ec2_cpu_low_threshold       = 20
+    rds_cpu_threshold           = 80
+    rds_connections_threshold   = 80
+    rds_read_latency_threshold  = 0.2
   }
 }

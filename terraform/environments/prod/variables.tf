@@ -57,7 +57,7 @@ variable "environment_config" {
     monitoring_enabled  = bool
     cost_alerts_enabled = bool
   })
-  
+
   default = {
     name                = "prod"
     instance_type       = "t3.small"
@@ -104,24 +104,24 @@ variable "app_asg_config" {
 variable "aurora_config" {
   description = "Aurora MySQL database configuration"
   type = object({
-    engine                        = string
+    engine                       = string
     engine_version               = string
     instance_class               = string
     storage_encrypted            = bool
     backup_retention_period      = number
-    backup_window               = string
-    maintenance_window          = string
-    monitoring_interval         = number
+    backup_window                = string
+    maintenance_window           = string
+    monitoring_interval          = number
     performance_insights_enabled = bool
-    deletion_protection         = bool
-    skip_final_snapshot         = bool
-    copy_tags_to_snapshot       = bool
-    reader_count                = number
-    auto_scaling_enabled        = bool
-    auto_scaling_min_capacity   = number
-    auto_scaling_max_capacity   = number
-    serverless_enabled          = bool
-    global_cluster_enabled      = bool
+    deletion_protection          = bool
+    skip_final_snapshot          = bool
+    copy_tags_to_snapshot        = bool
+    reader_count                 = number
+    auto_scaling_enabled         = bool
+    auto_scaling_min_capacity    = number
+    auto_scaling_max_capacity    = number
+    serverless_enabled           = bool
+    global_cluster_enabled       = bool
   })
 }
 

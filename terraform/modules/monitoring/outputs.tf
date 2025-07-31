@@ -61,13 +61,13 @@ output "alarm_arns" {
   description = "Map of CloudWatch alarm ARNs"
   value = {
     alb_high_response_time = aws_cloudwatch_metric_alarm.alb_high_response_time.arn
-    alb_high_5xx_errors   = aws_cloudwatch_metric_alarm.alb_high_5xx_errors.arn
-    web_high_cpu          = aws_cloudwatch_metric_alarm.web_high_cpu.arn
-    web_low_cpu           = aws_cloudwatch_metric_alarm.web_low_cpu.arn
-    app_high_cpu          = aws_cloudwatch_metric_alarm.app_high_cpu.arn
-    app_low_cpu           = aws_cloudwatch_metric_alarm.app_low_cpu.arn
-    rds_high_cpu          = aws_cloudwatch_metric_alarm.rds_high_cpu.arn
-    rds_high_connections  = aws_cloudwatch_metric_alarm.rds_high_connections.arn
-    rds_high_read_latency = aws_cloudwatch_metric_alarm.rds_high_read_latency.arn
+    alb_high_5xx_errors    = aws_cloudwatch_metric_alarm.alb_high_5xx_errors.arn
+    web_high_cpu           = aws_cloudwatch_metric_alarm.web_high_cpu.arn
+    web_low_cpu            = aws_cloudwatch_metric_alarm.web_low_cpu.arn
+    app_high_cpu           = aws_cloudwatch_metric_alarm.app_high_cpu.arn
+    app_low_cpu            = aws_cloudwatch_metric_alarm.app_low_cpu.arn
+    rds_high_cpu           = aws_cloudwatch_metric_alarm.rds_high_cpu.arn
+    rds_high_connections   = aws_cloudwatch_metric_alarm.rds_high_connections.arn
+    rds_high_read_latency  = aws_cloudwatch_metric_alarm.rds_high_read_latency.arn
   }
 }

@@ -37,14 +37,12 @@ resource "aws_s3_bucket_versioning" "static_website" {
   }
 }
 
-resource "aws_s3_bucket_encryption" "static_website" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "static_website" {
   bucket = aws_s3_bucket.static_website.id
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
 }
@@ -107,14 +105,12 @@ resource "aws_s3_bucket_versioning" "logs_backups" {
   }
 }
 
-resource "aws_s3_bucket_encryption" "logs_backups" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "logs_backups" {
   bucket = aws_s3_bucket.logs_backups.id
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
 }
@@ -190,14 +186,12 @@ resource "aws_s3_bucket_versioning" "app_assets" {
   }
 }
 
-resource "aws_s3_bucket_encryption" "app_assets" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "app_assets" {
   bucket = aws_s3_bucket.app_assets.id
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
     }
   }
 }

@@ -45,18 +45,18 @@ variable "common_tags" {
 variable "bucket_config" {
   description = "S3 bucket configuration"
   type = object({
-    versioning_enabled    = bool
-    encryption_enabled    = bool
-    public_read_enabled   = bool
-    lifecycle_enabled     = bool
-    logging_enabled       = bool
+    versioning_enabled  = bool
+    encryption_enabled  = bool
+    public_read_enabled = bool
+    lifecycle_enabled   = bool
+    logging_enabled     = bool
   })
-  
+
   default = {
-    versioning_enabled    = true
-    encryption_enabled    = true
-    public_read_enabled   = false
-    lifecycle_enabled     = true
-    logging_enabled       = true
+    versioning_enabled  = true
+    encryption_enabled  = true
+    public_read_enabled = false
+    lifecycle_enabled   = true
+    logging_enabled     = true
   }
 }

@@ -55,45 +55,45 @@ variable "common_tags" {
 variable "aurora_config" {
   description = "Aurora MySQL database configuration"
   type = object({
-    engine                        = string
+    engine                       = string
     engine_version               = string
     instance_class               = string
     storage_encrypted            = bool
     backup_retention_period      = number
-    backup_window               = string
-    maintenance_window          = string
-    monitoring_interval         = number
+    backup_window                = string
+    maintenance_window           = string
+    monitoring_interval          = number
     performance_insights_enabled = bool
-    deletion_protection         = bool
-    skip_final_snapshot         = bool
-    copy_tags_to_snapshot       = bool
-    reader_count                = number
-    auto_scaling_enabled        = bool
-    auto_scaling_min_capacity   = number
-    auto_scaling_max_capacity   = number
-    serverless_enabled          = bool
-    global_cluster_enabled      = bool
+    deletion_protection          = bool
+    skip_final_snapshot          = bool
+    copy_tags_to_snapshot        = bool
+    reader_count                 = number
+    auto_scaling_enabled         = bool
+    auto_scaling_min_capacity    = number
+    auto_scaling_max_capacity    = number
+    serverless_enabled           = bool
+    global_cluster_enabled       = bool
   })
-  
+
   default = {
-    engine                        = "aurora-mysql"
+    engine                       = "aurora-mysql"
     engine_version               = "8.0.mysql_aurora.3.04.0"
     instance_class               = "db.t3.medium"
     storage_encrypted            = true
     backup_retention_period      = 7
-    backup_window               = "03:00-04:00"
-    maintenance_window          = "sun:04:00-sun:05:00"
-    monitoring_interval         = 60
+    backup_window                = "03:00-04:00"
+    maintenance_window           = "sun:04:00-sun:05:00"
+    monitoring_interval          = 60
     performance_insights_enabled = true
-    deletion_protection         = false
-    skip_final_snapshot         = false
-    copy_tags_to_snapshot       = true
-    reader_count                = 1
-    auto_scaling_enabled        = true
-    auto_scaling_min_capacity   = 1
-    auto_scaling_max_capacity   = 3
-    serverless_enabled          = false
-    global_cluster_enabled      = false
+    deletion_protection          = false
+    skip_final_snapshot          = false
+    copy_tags_to_snapshot        = true
+    reader_count                 = 1
+    auto_scaling_enabled         = true
+    auto_scaling_min_capacity    = 1
+    auto_scaling_max_capacity    = 3
+    serverless_enabled           = false
+    global_cluster_enabled       = false
   }
 
   validation {

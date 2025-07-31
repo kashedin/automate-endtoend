@@ -2,6 +2,7 @@
 # This module creates the compute infrastructure
 
 terraform {
+  required_version = ">= 1.6.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -40,8 +41,8 @@ resource "aws_launch_template" "web" {
   }
 
   metadata_options {
-    http_endpoint = "enabled"
-    http_tokens   = "required"
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
     http_put_response_hop_limit = 1
   }
 
@@ -89,8 +90,8 @@ resource "aws_launch_template" "app" {
   }
 
   metadata_options {
-    http_endpoint = "enabled"
-    http_tokens   = "required"
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
     http_put_response_hop_limit = 1
   }
 
@@ -126,10 +127,10 @@ resource "aws_launch_template" "app" {
 
 # Auto Scaling Group for Web Tier
 resource "aws_autoscaling_group" "web" {
-  name                = "${var.environment}-web-asg"
-  vpc_zone_identifier = var.web_subnet_ids
-  target_group_arns   = [aws_lb_target_group.web.arn]
-  health_check_type   = "ELB"
+  name                      = "${var.environment}-web-asg"
+  vpc_zone_identifier       = var.web_subnet_ids
+  target_group_arns         = [aws_lb_target_group.web.arn]
+  health_check_type         = "ELB"
   health_check_grace_period = 300
 
   min_size         = var.web_asg_config.min_size
@@ -171,9 +172,9 @@ resource "aws_autoscaling_group" "web" {
 
 # Auto Scaling Group for App Tier
 resource "aws_autoscaling_group" "app" {
-  name                = "${var.environment}-app-asg"
-  vpc_zone_identifier = var.app_subnet_ids
-  health_check_type   = "EC2"
+  name                      = "${var.environment}-app-asg"
+  vpc_zone_identifier       = var.app_subnet_ids
+  health_check_type         = "EC2"
   health_check_grace_period = 300
 
   min_size         = var.app_asg_config.min_size
