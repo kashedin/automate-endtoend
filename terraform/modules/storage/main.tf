@@ -2,6 +2,7 @@
 # This module creates S3 buckets for application storage
 
 terraform {
+  required_version = ">= 1.6.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
