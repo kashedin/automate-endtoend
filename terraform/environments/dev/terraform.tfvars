@@ -1,6 +1,6 @@
 # Development Environment Values
 
-aws_region = "us-east-1"
+aws_region = "us-west-2"
 owner      = "devops-team"
 
 # Networking Configuration
@@ -59,4 +59,6 @@ aurora_config = {
 }
 
 # Alert email addresses (empty for dev)
-alert_email_addresses = []
+alert_email_addresses = []#
+ ALB Configuration
+enable_deletion_protection = false  # Disabled for dev environment

@@ -1,41 +1,39 @@
+Run for module in terraform/modules/*/; do
+Validating module: terraform/modules/compute/
+Terraform encountered problems during initialisation, including problems
+with the configuration, described below.
 
-TFLint Analysis
-Process completed with exit code 2.
-Terraform Validation
-Process completed with exit code 1.
-Terraform Validation
-Terraform exited with code 1.
-Checkov Security Scan
-Unhandled error: HttpError: Not Found
-Checkov Security Scan
-Resource not accessible by integration - https://docs.github.com/rest
-Checkov Security Scan
-CKV_AWS_354: "Ensure RDS Performance Insights are encrypted using KMS CMKs"
-Checkov Security Scan
-CKV_AWS_162: "Ensure RDS cluster has IAM authentication enabled"
-Checkov Security Scan
-CKV_AWS_2: "Ensure ALB protocol is HTTPS"
-Checkov Security Scan
-CKV_AWS_91: "Ensure the ELBv2 (Application/Network) has access logging enabled"
-Checkov Security Scan
-CKV_AWS_150: "Ensure that Load Balancer has deletion protection enabled"
-Checkov Security Scan
-CKV_AWS_131: "Ensure that ALB drops HTTP headers"
-Checkov Security Scan
-CKV_AWS_79: "Ensure Instance Metadata Service Version 1 is not enabled"
-Checkov Security Scan
-CKV_AWS_79: "Ensure Instance Metadata Service Version 1 is not enabled"
-Checkov Security Scan
-CKV_AWS_119: "Ensure DynamoDB Tables are encrypted using a KMS Customer Managed CMK"
-Checkov Security Scan
-CKV_AWS_28: "Ensure DynamoDB point in time recovery (backup) is enabled"
-TFLint Analysis
-Missing version constraint for provider "aws" in `required_providers`
-Checkov Security Scan
-Resource not accessible by integration - https://docs.github.com/rest
-Checkov Security Scan
-Resource not accessible by integration - https://docs.github.com/rest
-Checkov Security Scan
-This run of the CodeQL Action does not have permission to access Code Scanning API endpoints. As a result, it will not be opted into any experimental features. This could be because the Action is running on a pull request from a fork. If not, please ensure the Action has the 'security-events: write' permission. Details: Resource not accessible by integration - https://docs.github.com/rest
-Checkov Security Scan
-Resource not accessible by integration - https://docs.github.com/rest
+The Terraform configuration must be valid before initialization so that
+Terraform can determine which modules and providers need to be installed.
+╷
+│ Error: Missing newline after block definition
+│ 
+│   on variables.tf line 110, in variable "app_asg_config":
+│   98: variable "app_asg_config" {
+│   99:   description = "App tier Auto Scaling Group configuration"
+│  100:   type = object({
+│  101:     min_size         = number
+│  102:     max_size         = number
+│  103:     desired_capacity = number
+│  104:   })
+│  105:   default = {
+│  106:     min_size         = 1
+│  107:     max_size         = 3
+│  108:     desired_capacity = 2
+│  109:   }
+│  110: }variab
+│ 
+│ A block definition must end with a newline.
+╵
+
+╷
+│ Error: Unsupported block type
+│ 
+│   on variables.tf line 111:
+│  111: le "alb_logs_bucket" {
+│ 
+│ Blocks of type "le" are not expected here.
+╵
+
+Error: Terraform exited with code 1.
+Error: Process completed with exit code 1.
