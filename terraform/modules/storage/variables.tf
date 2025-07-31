@@ -60,22 +60,3 @@ variable "bucket_config" {
     logging_enabled     = true
   }
 }
-
-# Use enable_cross_region_replication to conditionally create replication
-resource "aws_s3_bucket_replication_configuration" "replication" {
-  count = var.enable_cross_region_replication ? 1 : 0
-  bucket = aws_s3_bucket.main.id
-
-  role = aws_iam_role.replication.arn
-
-  rules {
-    id     = "replication"
-    status = "Enabled"
-
-    destination {
-      bucket        = var.bucket_config["destination_bucket"]
-      storage_class = "STANDARD"
-      region        = var.replication_destination_region
-    }
-  }
-}

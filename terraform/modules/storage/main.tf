@@ -232,3 +232,76 @@ resource "aws_s3_object" "error_html" {
     Name = "error.html"
   })
 }
+
+# Main S3 Bucket
+resource "aws_s3_bucket" "main" {
+  bucket        = "${var.environment}-main-bucket"
+  force_destroy = var.force_destroy_buckets
+
+  tags = merge(var.common_tags, {
+    Name    = "${var.environment}-main-bucket"
+    Purpose = "main-bucket"
+  })
+}
+
+resource "aws_s3_bucket_versioning" "main" {
+  bucket = aws_s3_bucket.main.id
+  versioning_configuration {
+    status = var.bucket_config.versioning_enabled ? "Enabled" : "Suspended"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "main" {
+  count  = var.bucket_config.encryption_enabled ? 1 : 0
+  bucket = aws_s3_bucket.main.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "main" {
+  bucket = aws_s3_bucket.main.id
+
+  block_public_acls       = !var.bucket_config.public_read_enabled
+  block_public_policy     = !var.bucket_config.public_read_enabled
+  ignore_public_acls      = !var.bucket_config.public_read_enabled
+  restrict_public_buckets = !var.bucket_config.public_read_enabled
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "main" {
+  count  = var.bucket_config.lifecycle_enabled ? 1 : 0
+  bucket = aws_s3_bucket.main.id
+
+  rule {
+    id     = "main_lifecycle"
+    status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
+
+    expiration {
+      days = 365
+    }
+  }
+}
+
+resource "aws_s3_bucket_replication_configuration" "replication" {
+  count  = var.enable_cross_region_replication ? 1 : 0
+  bucket = aws_s3_bucket.main.id
+  role   = aws_iam_role.replication.arn
+
+  rules {
+    id     = "replication"
+    status = "Enabled"
+
+    destination {
+      bucket        = var.bucket_config.destination_bucket
+      storage_class = "STANDARD"
+      region        = var.replication_destination_region
+    }
+  }
+}
