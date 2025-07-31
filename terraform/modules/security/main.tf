@@ -49,13 +49,22 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # All outbound traffic
+  # HTTP outbound to web tier
   egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP to web tier"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web.id]
+  }
+
+  # HTTPS outbound to web tier
+  egress {
+    description     = "HTTPS to web tier"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web.id]
   }
 
   tags = merge(var.common_tags, {
@@ -92,12 +101,30 @@ resource "aws_security_group" "web" {
     cidr_blocks = [var.vpc_cidr]
   }
 
-  # All outbound traffic
+  # HTTP outbound to app tier
   egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description     = "HTTP to app tier"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id]
+  }
+
+  # HTTPS outbound for updates
+  egress {
+    description = "HTTPS for updates"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTP outbound for updates
+  egress {
+    description = "HTTP for updates"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -135,12 +162,30 @@ resource "aws_security_group" "app" {
     cidr_blocks = [var.vpc_cidr]
   }
 
-  # All outbound traffic
+  # MySQL outbound to database
   egress {
-    description = "All outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description     = "MySQL to database"
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.database.id]
+  }
+
+  # HTTPS outbound for updates
+  egress {
+    description = "HTTPS for updates"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # HTTP outbound for updates
+  egress {
+    description = "HTTP for updates"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 

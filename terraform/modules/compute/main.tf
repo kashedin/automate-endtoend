@@ -262,11 +262,34 @@ resource "aws_lb_target_group" "web" {
   }
 }
 
-# ALB Listener
-resource "aws_lb_listener" "web" {
+# ALB HTTP Listener (redirects to HTTPS)
+resource "aws_lb_listener" "web_http" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"
   protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-web-http-listener"
+  })
+}
+
+# ALB HTTPS Listener
+resource "aws_lb_listener" "web_https" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+  certificate_arn   = var.ssl_certificate_arn
 
   default_action {
     type             = "forward"
@@ -274,7 +297,7 @@ resource "aws_lb_listener" "web" {
   }
 
   tags = merge(var.common_tags, {
-    Name = "${var.environment}-web-listener"
+    Name = "${var.environment}-web-https-listener"
   })
 }
 

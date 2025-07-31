@@ -62,4 +62,6 @@ aurora_config = {
 alert_email_addresses = [
   "devops-team@company.com",
   "platform-team@company.com"
-]
+]#
+ ALB Configuration
+enable_deletion_protection = true  # Enabled for production environment

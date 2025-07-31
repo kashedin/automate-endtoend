@@ -113,4 +113,9 @@ variable "alb_logs_bucket" {
   description = "S3 bucket for ALB access logs"
   type        = string
   default     = ""
+}var
+iable "ssl_certificate_arn" {
+  description = "ARN of SSL certificate for HTTPS listener"
+  type        = string
+  default     = ""
 }

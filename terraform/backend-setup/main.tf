@@ -40,6 +40,7 @@ resource "random_id" "bucket_suffix" {
 resource "aws_kms_key" "terraform_state" {
   description             = "KMS key for Terraform state DynamoDB table encryption"
   deletion_window_in_days = 7
+  enable_key_rotation     = true
 
   tags = {
     Name        = "terraform-state-dynamodb-key"
