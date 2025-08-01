@@ -29,11 +29,7 @@ variable "enable_cross_region_replication" {
   default     = false
 }
 
-variable "replication_destination_region" {
-  description = "Destination region for cross-region replication"
-  type        = string
-  default     = "us-west-2"
-}
+
 
 variable "common_tags" {
   description = "Common tags to be applied to all resources"

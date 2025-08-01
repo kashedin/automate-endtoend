@@ -53,6 +53,12 @@ variable "allowed_ssh_cidrs" {
   default     = []
 }
 
+variable "allowed_http_cidrs" {
+  description = "CIDR blocks allowed for HTTP access to ALB"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
 # Database configuration
 variable "db_username" {
   description = "Database username"

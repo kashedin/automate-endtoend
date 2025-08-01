@@ -146,9 +146,61 @@ resource "aws_cloudwatch_dashboard" "application" {
   })
 }
 
+# KMS key for CloudWatch Logs encryption
+resource "aws_kms_key" "cloudwatch_logs" {
+  description             = "KMS key for CloudWatch Logs encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudWatch Logs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${data.aws_region.current.name}.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnEquals = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-cloudwatch-logs-kms"
+  })
+}
+
+resource "aws_kms_alias" "cloudwatch_logs" {
+  name          = "alias/${var.environment}-cloudwatch-logs"
+  target_key_id = aws_kms_key.cloudwatch_logs.key_id
+}
+
 # SNS Topic for Alerts
 resource "aws_sns_topic" "alerts" {
-  name = "${var.environment}-infrastructure-alerts"
+  name              = "${var.environment}-infrastructure-alerts"
+  kms_master_key_id = aws_kms_key.cloudwatch_logs.id
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-infrastructure-alerts"
@@ -168,6 +220,7 @@ resource "aws_sns_topic_subscription" "email_alerts" {
 resource "aws_cloudwatch_log_group" "web_access" {
   name              = "/aws/ec2/${var.environment}/web/httpd/access"
   retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-web-access-logs"
@@ -177,6 +230,7 @@ resource "aws_cloudwatch_log_group" "web_access" {
 resource "aws_cloudwatch_log_group" "web_error" {
   name              = "/aws/ec2/${var.environment}/web/httpd/error"
   retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-web-error-logs"
@@ -186,6 +240,7 @@ resource "aws_cloudwatch_log_group" "web_error" {
 resource "aws_cloudwatch_log_group" "app_logs" {
   name              = "/aws/ec2/${var.environment}/app/application"
   retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.cloudwatch_logs.arn
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-app-logs"
@@ -401,3 +456,6 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_read_latency" {
 
 # Data source for current region
 data "aws_region" "current" {}
+
+# Data source for current AWS account ID
+data "aws_caller_identity" "current" {}
