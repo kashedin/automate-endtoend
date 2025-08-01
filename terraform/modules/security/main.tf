@@ -47,6 +47,7 @@ resource "aws_security_group" "alb" {
 }
 
 # ALB Ingress Rules
+#checkov:skip=CKV_AWS_260:HTTP access required for ALB functionality and HTTPS redirect
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   count             = length(var.allowed_http_cidrs)
   security_group_id = aws_security_group.alb.id

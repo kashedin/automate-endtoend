@@ -45,9 +45,9 @@ aurora_config = {
   backup_retention_period      = 7
   backup_window                = "03:00-04:00"
   maintenance_window           = "sun:04:00-sun:05:00"
-  monitoring_interval          = 0     # Disable enhanced monitoring for cost savings
-  performance_insights_enabled = false # Disable for cost savings
-  deletion_protection          = false
+  monitoring_interval          = 0 # Disable enhanced monitoring for cost savings
+  performance_insights_enabled = true
+  deletion_protection          = true
   skip_final_snapshot          = true # Skip final snapshot in dev
   copy_tags_to_snapshot        = true
   reader_count                 = 0 # No reader instances in dev
@@ -62,4 +62,4 @@ aurora_config = {
 alert_email_addresses = []
 
 # ALB Configuration
-enable_deletion_protection = false # Disabled for dev environment
+enable_deletion_protection = true

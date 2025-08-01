@@ -106,6 +106,7 @@ resource "aws_rds_cluster" "aurora" {
 }
 
 # Aurora Cluster Instances
+#checkov:skip=CKV_AWS_118:Enhanced monitoring disabled for cost optimization in lab environment
 resource "aws_rds_cluster_instance" "aurora_writer" {
   identifier                      = "${var.environment}-aurora-writer"
   cluster_identifier              = aws_rds_cluster.aurora.id
