@@ -31,6 +31,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 }
 
 # Security Group for Application Load Balancer
+#checkov:skip=CKV2_AWS_5:Security group is attached to ALB in compute module
 resource "aws_security_group" "alb" {
   name_prefix = "${var.environment}-alb-"
   vpc_id      = var.vpc_id
@@ -87,6 +88,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_web_https" {
 }
 
 # Security Group for Web Tier
+#checkov:skip=CKV2_AWS_5:Security group is attached to EC2 instances in compute module
 resource "aws_security_group" "web" {
   name_prefix = "${var.environment}-web-"
   vpc_id      = var.vpc_id
@@ -103,6 +105,7 @@ resource "aws_security_group" "web" {
 }
 
 # Web Tier Ingress Rules
+#checkov:skip=CKV_AWS_260:Port 80 access required from ALB for web tier functionality
 resource "aws_vpc_security_group_ingress_rule" "web_http_from_alb" {
   security_group_id            = aws_security_group.web.id
   description                  = "HTTP from ALB"
@@ -151,6 +154,7 @@ resource "aws_vpc_security_group_egress_rule" "web_to_app" {
 }
 
 # Security Group for App Tier
+#checkov:skip=CKV2_AWS_5:Security group is attached to EC2 instances in compute module
 resource "aws_security_group" "app" {
   name_prefix = "${var.environment}-app-"
   vpc_id      = var.vpc_id
@@ -214,6 +218,7 @@ resource "aws_vpc_security_group_egress_rule" "app_to_database" {
 }
 
 # Security Group for Database (Aurora)
+#checkov:skip=CKV2_AWS_5:Security group is attached to RDS cluster in database module
 resource "aws_security_group" "database" {
   name_prefix = "${var.environment}-db-"
   vpc_id      = var.vpc_id

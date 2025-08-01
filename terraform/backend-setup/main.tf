@@ -84,6 +84,9 @@ resource "aws_kms_alias" "terraform_state" {
 }
 
 # S3 bucket for Terraform state (simplified for lab environment)
+#checkov:skip=CKV_AWS_18:Access logging not required for Terraform state bucket in lab environment
+#checkov:skip=CKV_AWS_144:Cross-region replication not required for Terraform state in lab environment
+#checkov:skip=CKV2_AWS_62:Event notifications not required for lab environment
 resource "aws_s3_bucket" "terraform_state" {
   bucket        = "terraform-state-kashedin-${random_id.bucket_suffix.hex}"
   force_destroy = true
