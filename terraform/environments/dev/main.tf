@@ -16,8 +16,8 @@ terraform {
     }
   }
 
-  # Backend will be configured during init
-  backend "s3" {}
+  # Using local backend for AWS Academy sandbox
+  # backend "s3" {}
 }
 
 # AWS Provider

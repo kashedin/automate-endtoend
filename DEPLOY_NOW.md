@@ -1,41 +1,23 @@
-# 🚀 DEPLOYMENT READY - CRITICAL ISSUES RESOLVED
+# Deployment Trigger
 
-## ✅ Status: READY FOR DEPLOYMENT
+Deployment initiated at: $(Get-Date)
 
-**Critical Issue Fixed:**
-- Security group circular dependency resolved
-- Terraform validation passing
-- All modules validate successfully
+Environment: dev
 
-**Remaining Issues:**
-- Only security best practice warnings (non-blocking)
-- Infrastructure will deploy successfully despite warnings
+Status: Ready for deployment
 
-## 🎯 Deployment Trigger
+---
 
-**Timestamp**: $(date)
-**Environment**: Development
-**Action**: Auto-deploy infrastructure
+To deploy:
+1. Go to GitHub Actions
+2. Select "Simple Infrastructure Deploy"
+3. Click "Run workflow"
+4. Choose environment (dev/prod)
+5. Click "Run workflow"
 
-## 📋 What Will Be Deployed:
-- ✅ VPC with 3-tier architecture (10.0.0.0/16)
-- ✅ Aurora MySQL database cluster (Multi-AZ)
-- ✅ Auto Scaling Groups (Web & App tiers)
-- ✅ Application Load Balancer (Internet-facing)
-- ✅ S3 buckets for storage and static content
-- ✅ CloudWatch monitoring and logging
-- ✅ Security groups with proper isolation
-- ✅ IAM roles and policies
-- ✅ Parameter Store configuration
-
-## ⏱️ Expected Timeline:
-- **Total deployment time**: 15-20 minutes
-- **Aurora database**: 10-15 minutes (longest component)
-- **VPC/Networking**: 2-3 minutes
-- **EC2/Auto Scaling**: 3-5 minutes
-- **Load Balancer**: 2-3 minutes
-
-## 🔗 Monitor Progress:
-https://github.com/kashedin/automate-endtoend/actions
-
-**Status**: DEPLOYING... 🚀
+The workflow will:
+- Initialize Terraform with remote state
+- Validate configuration
+- Plan infrastructure changes
+- Apply changes automatically
+- Provide deployment summary with URLs

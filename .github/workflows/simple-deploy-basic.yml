@@ -1,0 +1,105 @@
+name: Basic Infrastructure Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+jobs:
+  deploy:
+    name: Deploy Basic Infrastructure
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Create simplified Terraform config
+      run: |
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        # Backup original main.tf
+        mv main.tf main-original.tf || true
+        # Use simplified version
+        mv main-simplified.tf main.tf
+
+    - name: Terraform Init
+      run: |
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=${{ github.event.inputs.environment }}/terraform-basic.tfstate" \
+          -backend-config="region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+
+    - name: Terraform Validate
+      run: |
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        terraform validate
+
+    - name: Terraform Plan
+      run: |
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        terraform plan -var-file="terraform.tfvars" -out=tfplan
+
+    - name: Terraform Apply
+      run: |
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        terraform apply -auto-approve tfplan
+
+    - name: Get Outputs
+      id: outputs
+      run: |
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        echo "ALB_DNS=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "S3_BUCKET=$(terraform output -raw s3_bucket_name 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+
+    - name: Deployment Summary
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🚀 Basic Infrastructure Deployment Complete
+        
+        ## Environment: ${{ github.event.inputs.environment }}
+        
+        ## Deployed Resources
+        - ✅ VPC with public/private subnets
+        - ✅ Internet Gateway and routing
+        - ✅ Application Load Balancer
+        - ✅ Security Groups
+        - ✅ S3 bucket for storage
+        
+        ## Resource Details
+        - **VPC ID**: ${{ steps.outputs.outputs.VPC_ID }}
+        - **Application URL**: ${{ steps.outputs.outputs.ALB_DNS }}
+        - **S3 Bucket**: ${{ steps.outputs.outputs.S3_BUCKET }}
+        
+        ## Next Steps
+        - Deploy EC2 instances to target group
+        - Configure application deployment
+        - Set up monitoring and logging
+        
+        *Deployment completed at $(date)*
+        EOF
