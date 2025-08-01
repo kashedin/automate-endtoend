@@ -230,9 +230,9 @@ app.use((error, req, res, next) => {
 
 // Start server
 app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`Application server running on port ${PORT}`);
-    console.log(`Environment: ${environment}`);
-    console.log(`Database endpoint: ${db_endpoint}`);
+    console.log('Application server running on port ' + PORT);
+    console.log('Environment: ${environment}');
+    console.log('Database endpoint: ${db_endpoint}');
     
     // Initialize database connection
     await initializeDatabase();
