@@ -1,70 +1,38 @@
-DEPLOYMENT ERRORS RESOLVED ✅
-
-## Issue 1: Compute Module (FIXED)
-**Original Error:**
-- Syntax error in terraform/modules/compute/variables.tf
-- Missing newline after block definition on line 116
-- Corrupted variable declaration: "}var" and "iable" instead of "}" and "variable"
-
-**Resolution Applied:**
-- Fixed the syntax error by properly separating the variable blocks
-- Added proper newline after the alb_logs_bucket variable block
-- Corrected the ssl_certificate_arn variable declaration
-
-## Issue 2: Monitoring Module (FIXED)
-**Original Error:**
-- Invalid block definition in terraform/modules/monitoring/main.tf line 201
-- Malformed comment: "}# CloudWatch Alarms"
-- Missing proper comment formatting
-
-**Resolution Applied:**
-- Fixed malformed comment by adding proper newline separation
-- Corrected comment format from "}# CloudWatch Alarms" to proper "# CloudWatch Alarms"
-- Ensured proper block closure and comment structure
-
-## Issue 3: Terraform Format Issues (FIXED)
-**Original Error:**
-- Invalid block definition in terraform.tfvars files (dev and prod)
-- Malformed comments: "]# ALB Configuration"
-- Missing proper comment formatting
-
-**Resolution Applied:**
-- Fixed malformed comments in both dev and prod terraform.tfvars files
-- Changed "]# ALB Configuration" to proper format with newline separation
-- Ensured proper comment structure throughout
-
-## Issue 4: CloudWatch Dashboard Tags (FIXED)
-**Original Error:**
-- Unsupported argument "tags" in aws_cloudwatch_dashboard resources
-- CloudWatch dashboards don't support tags in Terraform AWS provider
-
-**Resolution Applied:**
-- Removed unsupported tags arguments from both infrastructure and application dashboards
-- Kept all other dashboard configuration intact
-- Dashboards will still be created but without tags
-
-## Validation Status:
-- ✅ Compute module: PASSING
-- ✅ Database module: PASSING  
-- ✅ Monitoring module: PASSING
-- ✅ Networking module: PASSING
-- ✅ Security module: PASSING
-- ✅ Storage module: PASSING
-- ✅ Dev environment: PASSING
-- ✅ Prod environment: PASSING
-
-## Security Scan Status:
-- ⚠️ Security warnings present (non-blocking)
-- These are best practice recommendations, not deployment blockers
-- Infrastructure will deploy successfully despite security warnings
-
-## Next Steps:
-1. All critical Terraform validation errors have been resolved
-2. All modules and environments should now validate successfully
-3. Ready for deployment via GitHub Actions
-4. Go to: https://github.com/kashedin/automate-endtoend/actions
-5. Run "Simple Infrastructure Deploy" workflow
-
-**Status**: ALL CRITICAL ISSUES RESOLVED - READY FOR DEPLOYMENT 🚀
-
-**Latest Commit**: e962d1d - All validation fixes applied
+Annotations
+13 errors and 5 warnings
+TFLint Analysis
+Process completed with exit code 2.
+Checkov Security Scan
+Unhandled error: HttpError: Not Found
+Checkov Security Scan
+Resource not accessible by integration - https://docs.github.com/rest
+Checkov Security Scan
+CKV_AWS_53: "Ensure S3 bucket has block public ACLS enabled"
+Checkov Security Scan
+CKV_AWS_56: "Ensure S3 bucket has 'restrict_public_buckets' enabled"
+Checkov Security Scan
+CKV_AWS_337: "Ensure SSM parameters are using KMS CMK"
+Checkov Security Scan
+CKV_AWS_260: "Ensure no security groups allow ingress from 0.0.0.0:0 to port 80"
+Checkov Security Scan
+CKV_AWS_260: "Ensure no security groups allow ingress from 0.0.0.0:0 to port 80"
+Checkov Security Scan
+CKV_AWS_354: "Ensure RDS Performance Insights are encrypted using KMS CMKs"
+Checkov Security Scan
+CKV_AWS_353: "Ensure that RDS instances have performance insights enabled"
+Checkov Security Scan
+CKV_AWS_118: "Ensure that enhanced monitoring is enabled for Amazon RDS instances"
+Checkov Security Scan
+CKV_AWS_139: "Ensure that RDS clusters have deletion protection enabled"
+Checkov Security Scan
+CKV_AWS_150: "Ensure that Load Balancer has deletion protection enabled"
+TFLint Analysis
+variable "allowed_http_cidrs" is declared but not used
+Checkov Security Scan
+Resource not accessible by integration - https://docs.github.com/rest
+Checkov Security Scan
+Resource not accessible by integration - https://docs.github.com/rest
+Checkov Security Scan
+This run of the CodeQL Action does not have permission to access Code Scanning API endpoints. As a result, it will not be opted into any experimental features. This could be because the Action is running on a pull request from a fork. If not, please ensure the Action has the 'security-events: write' permission. Details: Resource not accessible by integration - https://docs.github.com/rest
+Checkov Security Scan
+Resource not accessible by integration - https://docs.github.com/rest

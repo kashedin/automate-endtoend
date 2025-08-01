@@ -48,12 +48,13 @@ resource "aws_security_group" "alb" {
 
 # ALB Ingress Rules
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+  count             = length(var.allowed_http_cidrs)
   security_group_id = aws_security_group.alb.id
-  description       = "HTTP from internet"
+  description       = "HTTP from allowed CIDRs"
   from_port         = 80
   to_port           = 80
   ip_protocol       = "tcp"
-  cidr_ipv4         = "0.0.0.0/0"
+  cidr_ipv4         = var.allowed_http_cidrs[count.index]
 }
 
 resource "aws_vpc_security_group_ingress_rule" "alb_https" {
@@ -237,6 +238,52 @@ resource "aws_vpc_security_group_ingress_rule" "database_from_app" {
   referenced_security_group_id = aws_security_group.app.id
 }
 
+# KMS key for SSM Parameter encryption
+resource "aws_kms_key" "ssm_parameters" {
+  description             = "KMS key for SSM Parameter encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow SSM Service"
+        Effect = "Allow"
+        Principal = {
+          Service = "ssm.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-ssm-parameters-kms"
+  })
+}
+
+resource "aws_kms_alias" "ssm_parameters" {
+  name          = "alias/${var.environment}-ssm-parameters"
+  target_key_id = aws_kms_key.ssm_parameters.key_id
+}
+
+# Data source for current AWS account ID
+data "aws_caller_identity" "current" {}
+
 # Random password for database
 resource "random_password" "db_password" {
   length  = 16
@@ -247,8 +294,9 @@ resource "random_password" "db_password" {
 resource "aws_ssm_parameter" "db_username" {
   name        = "/${var.environment}/database/username"
   description = "Database username for ${var.environment} environment"
-  type        = "String"
+  type        = "SecureString"
   value       = var.db_username
+  key_id      = aws_kms_key.ssm_parameters.arn
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-db-username"
@@ -261,6 +309,7 @@ resource "aws_ssm_parameter" "db_password" {
   description = "Database password for ${var.environment} environment"
   type        = "SecureString"
   value       = random_password.db_password.result
+  key_id      = aws_kms_key.ssm_parameters.arn
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-db-password"
@@ -271,8 +320,9 @@ resource "aws_ssm_parameter" "db_password" {
 resource "aws_ssm_parameter" "db_name" {
   name        = "/${var.environment}/database/name"
   description = "Database name for ${var.environment} environment"
-  type        = "String"
+  type        = "SecureString"
   value       = var.db_name
+  key_id      = aws_kms_key.ssm_parameters.arn
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-db-name"
@@ -285,8 +335,9 @@ resource "aws_ssm_parameter" "app_config" {
 
   name        = "/${var.environment}/app/${each.key}"
   description = "Application parameter: ${each.key}"
-  type        = each.value.type
+  type        = "SecureString"
   value       = each.value.value
+  key_id      = aws_kms_key.ssm_parameters.arn
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-app-${each.key}"

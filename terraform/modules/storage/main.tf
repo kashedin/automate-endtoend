@@ -57,6 +57,28 @@ resource "aws_s3_bucket_public_access_block" "static_website" {
   restrict_public_buckets = false
 }
 
+# Lifecycle configuration for static website bucket
+resource "aws_s3_bucket_lifecycle_configuration" "static_website" {
+  bucket = aws_s3_bucket.static_website.id
+
+  rule {
+    id     = "static_website_lifecycle"
+    status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+}
+
 resource "aws_s3_bucket_website_configuration" "static_website" {
   bucket = aws_s3_bucket.static_website.id
 
@@ -126,6 +148,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs_backups" {
     noncurrent_version_expiration {
       noncurrent_days = 30
     }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 
   rule {
@@ -148,6 +174,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs_backups" {
 
     expiration {
       days = var.backup_retention_days
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }
@@ -187,6 +217,33 @@ resource "aws_s3_bucket_public_access_block" "app_assets" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# Lifecycle configuration for app assets bucket
+resource "aws_s3_bucket_lifecycle_configuration" "app_assets" {
+  bucket = aws_s3_bucket.app_assets.id
+
+  rule {
+    id     = "app_assets_lifecycle"
+    status = "Enabled"
+
+    filter {
+      prefix = ""
+    }
+
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
 }
 
 # Upload sample static website content
@@ -248,10 +305,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "main" {
 resource "aws_s3_bucket_public_access_block" "main" {
   bucket = aws_s3_bucket.main.id
 
-  block_public_acls       = !var.bucket_config.public_read_enabled
-  block_public_policy     = !var.bucket_config.public_read_enabled
-  ignore_public_acls      = !var.bucket_config.public_read_enabled
-  restrict_public_buckets = !var.bucket_config.public_read_enabled
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "main" {
@@ -268,6 +325,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "main" {
 
     expiration {
       days = 365
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
     }
   }
 }
