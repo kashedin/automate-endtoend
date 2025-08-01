@@ -294,7 +294,7 @@ resource "aws_ssm_parameter" "app_config" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "custom_rules" {
-  for_each = { for idx, rule in var.security_rules : idx => rule }
+  for_each          = { for idx, rule in var.security_rules : idx => rule }
   security_group_id = aws_security_group.web.id
   from_port         = each.value.from_port
   to_port           = each.value.to_port

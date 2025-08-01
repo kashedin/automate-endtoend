@@ -178,3 +178,16 @@ resource "aws_route_table_association" "private_data" {
   subnet_id      = aws_subnet.private_data[count.index].id
   route_table_id = aws_route_table.private[count.index].id
 }
+
+# Restrict default security group (Checkov requirement)
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  # Remove all default rules
+  ingress = []
+  egress  = []
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-default-sg-restricted"
+  })
+}

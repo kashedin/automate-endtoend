@@ -50,6 +50,7 @@ variable "bucket_config" {
     public_read_enabled = bool
     lifecycle_enabled   = bool
     logging_enabled     = bool
+    destination_bucket  = optional(string, "")
   })
 
   default = {
@@ -58,5 +59,6 @@ variable "bucket_config" {
     public_read_enabled = false
     lifecycle_enabled   = true
     logging_enabled     = true
+    destination_bucket  = ""
   }
 }

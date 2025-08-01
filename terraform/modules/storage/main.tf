@@ -69,24 +69,7 @@ resource "aws_s3_bucket_website_configuration" "static_website" {
   }
 }
 
-resource "aws_s3_bucket_policy" "static_website" {
-  bucket = aws_s3_bucket.static_website.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.static_website.arn}/*"
-      }
-    ]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.static_website]
-}
+# S3 bucket policy removed - using CloudFront OAC instead for better security
 
 # S3 Bucket for Application Logs and Backups
 resource "aws_s3_bucket" "logs_backups" {
@@ -290,24 +273,26 @@ resource "aws_s3_bucket_lifecycle_configuration" "main" {
 }
 
 resource "aws_s3_bucket_replication_configuration" "replication" {
-  count  = var.enable_cross_region_replication ? 1 : 0
+  count  = var.enable_cross_region_replication && var.bucket_config.destination_bucket != "" ? 1 : 0
   bucket = aws_s3_bucket.main.id
-  role   = aws_iam_role.replication.arn
+  role   = aws_iam_role.replication[0].arn
 
-  rules {
+  rule {
     id     = "replication"
     status = "Enabled"
 
     destination {
-      bucket        = var.bucket_config.destination_bucket
+      bucket        = "arn:aws:s3:::${var.bucket_config.destination_bucket}"
       storage_class = "STANDARD"
-      region        = var.replication_destination_region
     }
   }
+
+  depends_on = [aws_s3_bucket_versioning.main]
 }
 
 resource "aws_iam_role" "replication" {
-  name = "${var.environment}-s3-replication-role"
+  count = var.enable_cross_region_replication && var.bucket_config.destination_bucket != "" ? 1 : 0
+  name  = "${var.environment}-s3-replication-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -324,8 +309,9 @@ resource "aws_iam_role" "replication" {
 }
 
 resource "aws_iam_role_policy" "replication" {
-  name = "${var.environment}-s3-replication-policy"
-  role = aws_iam_role.replication.id
+  count = var.enable_cross_region_replication && var.bucket_config.destination_bucket != "" ? 1 : 0
+  name  = "${var.environment}-s3-replication-policy"
+  role  = aws_iam_role.replication[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -359,4 +345,90 @@ resource "aws_iam_role_policy" "replication" {
   })
 }
 
-if: github.event_name == 'pull_request'
+# CloudFront Origin Access Control for S3
+resource "aws_cloudfront_origin_access_control" "static_website" {
+  name                              = "${var.environment}-static-website-oac"
+  description                       = "OAC for static website S3 bucket"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# CloudFront Distribution for Static Website
+resource "aws_cloudfront_distribution" "static_website" {
+  origin {
+    domain_name              = aws_s3_bucket.static_website.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.static_website.id
+    origin_id                = "S3-${aws_s3_bucket.static_website.id}"
+  }
+
+  enabled             = true
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+
+  default_cache_behavior {
+    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods         = ["GET", "HEAD"]
+    target_origin_id       = "S3-${aws_s3_bucket.static_website.id}"
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+    min_ttl     = 0
+    default_ttl = 3600
+    max_ttl     = 86400
+  }
+
+  custom_error_response {
+    error_code         = 404
+    response_code      = 404
+    response_page_path = "/error.html"
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = merge(var.common_tags, {
+    Name = "${var.environment}-static-website-cdn"
+  })
+}
+
+# Update S3 bucket policy to allow CloudFront access (replaces the public policy)
+resource "aws_s3_bucket_policy" "static_website_cloudfront" {
+  bucket = aws_s3_bucket.static_website.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.static_website.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.static_website.arn
+          }
+        }
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.static_website]
+}

@@ -65,3 +65,25 @@ output "bucket_arns" {
 
 # Data source for current region
 data "aws_region" "current" {}
+
+# Main bucket outputs
+output "main_bucket_id" {
+  description = "ID of the main S3 bucket"
+  value       = aws_s3_bucket.main.id
+}
+
+output "main_bucket_arn" {
+  description = "ARN of the main S3 bucket"
+  value       = aws_s3_bucket.main.arn
+}
+
+# CloudFront distribution outputs
+output "cloudfront_distribution_id" {
+  description = "ID of the CloudFront distribution"
+  value       = aws_cloudfront_distribution.static_website.id
+}
+
+output "cloudfront_distribution_domain_name" {
+  description = "Domain name of the CloudFront distribution"
+  value       = aws_cloudfront_distribution.static_website.domain_name
+}
