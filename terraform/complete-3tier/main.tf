@@ -39,7 +39,7 @@ variable "aws_region" {
 variable "lab_role_name" {
   description = "Existing lab role name for EC2 instances"
   type        = string
-  default     = "LabRole"
+  default     = "LabInstanceProfile"
 }
 
 # Random ID for unique naming
