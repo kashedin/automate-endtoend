@@ -123,23 +123,15 @@ resource "aws_security_group" "web" {
   }
 }
 
-# Simple S3 Bucket
-resource "aws_s3_bucket" "main" {
-  bucket        = "${var.environment}-bucket-${random_id.suffix.hex}"
-  force_destroy = true
-
-  tags = {
-    Name = "${var.environment}-bucket"
-  }
-}
+# Note: S3 bucket removed due to AWS Academy restrictions
 
 # Outputs
 output "vpc_id" {
   value = aws_vpc.main.id
 }
 
-output "s3_bucket" {
-  value = aws_s3_bucket.main.bucket
+output "security_group_id" {
+  value = aws_security_group.web.id
 }
 
 output "public_subnets" {

@@ -49,10 +49,10 @@ jobs:
       working-directory: terraform/basic-deploy
       run: |
         echo "VPC_ID=$(terraform output -raw vpc_id)" >> $GITHUB_ENV
-        echo "S3_BUCKET=$(terraform output -raw s3_bucket)" >> $GITHUB_ENV
+        echo "SG_ID=$(terraform output -raw security_group_id)" >> $GITHUB_ENV
 
     - name: Summary
       run: |
         echo "## 🚀 Basic Infrastructure Deployed" >> $GITHUB_STEP_SUMMARY
         echo "- **VPC ID**: $VPC_ID" >> $GITHUB_STEP_SUMMARY
-        echo "- **S3 Bucket**: $S3_BUCKET" >> $GITHUB_STEP_SUMMARY
+        echo "- **Security Group**: $SG_ID" >> $GITHUB_STEP_SUMMARY
