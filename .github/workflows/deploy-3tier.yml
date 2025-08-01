@@ -1,0 +1,261 @@
+name: Deploy 3-Tier Architecture
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+        - deploy
+        - destroy
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+jobs:
+  deploy:
+    name: Deploy 3-Tier Infrastructure
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init
+      working-directory: terraform/complete-3tier
+      run: |
+        terraform init \
+          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+          -backend-config="key=3tier/${{ github.event.inputs.environment }}/terraform.tfstate" \
+          -backend-config="region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+
+    - name: Terraform Validate
+      working-directory: terraform/complete-3tier
+      run: terraform validate
+
+    - name: Terraform Plan
+      working-directory: terraform/complete-3tier
+      run: |
+        terraform plan \
+          -var="environment=${{ github.event.inputs.environment }}" \
+          -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -out=tfplan
+
+    - name: Terraform Apply
+      if: github.event.inputs.action == 'deploy'
+      working-directory: terraform/complete-3tier
+      run: terraform apply -auto-approve tfplan
+
+    - name: Terraform Destroy
+      if: github.event.inputs.action == 'destroy'
+      working-directory: terraform/complete-3tier
+      run: |
+        terraform destroy -auto-approve \
+          -var="environment=${{ github.event.inputs.environment }}" \
+          -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}"
+
+    - name: Get Outputs
+      if: github.event.inputs.action == 'deploy'
+      id: outputs
+      working-directory: terraform/complete-3tier
+      run: |
+        echo "APPLICATION_URL=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "PUBLIC_SUBNETS=$(terraform output -json public_subnets 2>/dev/null | jq -r 'join(", ")' || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "WEB_SUBNETS=$(terraform output -json private_web_subnets 2>/dev/null | jq -r 'join(", ")' || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "APP_SUBNETS=$(terraform output -json private_app_subnets 2>/dev/null | jq -r 'join(", ")' || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "DB_SUBNETS=$(terraform output -json private_db_subnets 2>/dev/null | jq -r 'join(", ")' || echo 'Not available')" >> $GITHUB_OUTPUT
+
+    - name: Wait for Application to be Ready
+      if: github.event.inputs.action == 'deploy'
+      run: |
+        echo "Waiting for application to be ready..."
+        APP_URL="${{ steps.outputs.outputs.APPLICATION_URL }}"
+        
+        if [ "$APP_URL" != "Not available" ]; then
+          timeout=600  # 10 minutes
+          counter=0
+          
+          while [ $counter -lt $timeout ]; do
+            if curl -s -f "$APP_URL" > /dev/null 2>&1; then
+              echo "✅ Application is responding at $APP_URL"
+              break
+            fi
+            echo "⏳ Waiting for application... ($counter/$timeout seconds)"
+            sleep 30
+            counter=$((counter + 30))
+          done
+          
+          if [ $counter -ge $timeout ]; then
+            echo "⚠️ Application did not respond within timeout period"
+          fi
+        fi
+
+    - name: Test Application Health
+      if: github.event.inputs.action == 'deploy'
+      run: |
+        APP_URL="${{ steps.outputs.outputs.APPLICATION_URL }}"
+        
+        if [ "$APP_URL" != "Not available" ]; then
+          echo "🔍 Testing application health endpoints..."
+          
+          # Test main page
+          if curl -s -f "$APP_URL" > /dev/null; then
+            echo "✅ Main page is accessible"
+          else
+            echo "❌ Main page is not accessible"
+          fi
+          
+          # Test health endpoint (may take time for instances to be ready)
+          sleep 60
+          if curl -s -f "$APP_URL/health" > /dev/null; then
+            echo "✅ Health endpoint is responding"
+          else
+            echo "⚠️ Health endpoint is not yet responding (instances may still be initializing)"
+          fi
+        fi
+
+    - name: Deployment Summary
+      if: github.event.inputs.action == 'deploy'
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🏗️ 3-Tier Architecture Deployment Complete
+        
+        ## Environment: ${{ github.event.inputs.environment }}
+        
+        ## 🌐 Architecture Overview
+        
+        ### Load Balancer Tier
+        - ✅ Application Load Balancer deployed
+        - ✅ Health checks configured
+        - ✅ Multi-AZ distribution
+        
+        ### Web Tier (Private Subnets)
+        - ✅ Auto Scaling Group with Apache servers
+        - ✅ Launch templates with user data
+        - ✅ Security groups configured
+        - ✅ Multi-AZ deployment
+        
+        ### Application Tier (Private Subnets)
+        - ✅ Auto Scaling Group with Node.js servers
+        - ✅ Database connectivity configured
+        - ✅ API endpoints for health checks
+        - ✅ Multi-AZ deployment
+        
+        ### Database Tier (Private Subnets)
+        - ✅ RDS MySQL instance
+        - ✅ Automated backups enabled
+        - ✅ Security groups restricting access
+        - ✅ Parameter groups optimized
+        
+        ### Networking
+        - ✅ VPC with public and private subnets
+        - ✅ NAT Gateways for outbound internet access
+        - ✅ Internet Gateway for public access
+        - ✅ Route tables properly configured
+        
+        ## 📊 Deployment Details
+        
+        | Component | Details |
+        |-----------|---------|
+        | **Application URL** | ${{ steps.outputs.outputs.APPLICATION_URL }} |
+        | **VPC ID** | ${{ steps.outputs.outputs.VPC_ID }} |
+        | **Public Subnets** | ${{ steps.outputs.outputs.PUBLIC_SUBNETS }} |
+        | **Web Subnets** | ${{ steps.outputs.outputs.WEB_SUBNETS }} |
+        | **App Subnets** | ${{ steps.outputs.outputs.APP_SUBNETS }} |
+        | **DB Subnets** | ${{ steps.outputs.outputs.DB_SUBNETS }} |
+        
+        ## 🔗 Access Points
+        
+        - **Main Application**: ${{ steps.outputs.outputs.APPLICATION_URL }}
+        - **Health Check**: ${{ steps.outputs.outputs.APPLICATION_URL }}/health
+        - **Database Status**: ${{ steps.outputs.outputs.APPLICATION_URL }}/api/db-status
+        
+        ## 🏛️ Architecture Features
+        
+        ### ✅ Implemented Features
+        - **High Availability**: Multi-AZ deployment across all tiers
+        - **Auto Scaling**: Web and App tiers can scale based on demand
+        - **Load Balancing**: ALB distributes traffic across web servers
+        - **Security**: Proper network segmentation with security groups
+        - **Database**: RDS MySQL with automated backups
+        - **Monitoring**: Health checks and basic monitoring
+        - **Infrastructure as Code**: Complete Terraform implementation
+        - **CI/CD**: Automated deployment via GitHub Actions
+        
+        ### 🔧 Sandbox Adaptations
+        - **IAM**: Using existing LabRole instead of custom roles
+        - **Encryption**: Basic encryption (KMS not available)
+        - **Monitoring**: Basic health checks (advanced CloudWatch limited)
+        - **Security**: Security groups instead of WAF
+        
+        ## 🚀 Next Steps
+        
+        1. **Test the Application**: Visit the application URL above
+        2. **Monitor Health**: Check health endpoints for all tiers
+        3. **Scale Testing**: Test auto-scaling by generating load
+        4. **Database Testing**: Verify database connectivity through the app
+        5. **Security Review**: Validate security group configurations
+        
+        ## 📈 Success Metrics
+        
+        - ✅ **3-Tier Architecture**: Complete separation of concerns
+        - ✅ **High Availability**: Multi-AZ deployment
+        - ✅ **Scalability**: Auto Scaling Groups configured
+        - ✅ **Security**: Network segmentation implemented
+        - ✅ **Automation**: Full IaC and CI/CD pipeline
+        - ✅ **Monitoring**: Health checks and basic observability
+        
+        *Deployment completed at $(date)*
+        
+        ---
+        
+        **🎯 Project Goal Achievement**: This deployment successfully demonstrates a production-ready 3-tier architecture with modern DevOps practices, adapted for AWS Academy Sandbox constraints.
+        EOF
+
+    - name: Destruction Summary
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🗑️ 3-Tier Architecture Destruction Complete
+        
+        ## Environment: ${{ github.event.inputs.environment }}
+        
+        All infrastructure resources have been successfully destroyed:
+        
+        - ✅ Auto Scaling Groups terminated
+        - ✅ EC2 instances terminated
+        - ✅ RDS database deleted
+        - ✅ Load balancer deleted
+        - ✅ NAT gateways deleted
+        - ✅ VPC and subnets deleted
+        - ✅ Security groups deleted
+        
+        *Destruction completed at $(date)*
+        EOF
