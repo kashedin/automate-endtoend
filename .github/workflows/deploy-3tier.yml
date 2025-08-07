@@ -58,6 +58,8 @@ jobs:
     - name: Terraform Plan
       working-directory: terraform/complete-3tier
       run: |
+        # Use simplified configuration for AWS Academy
+        cp main-simple.tf main.tf
         terraform plan \
           -var="environment=${{ github.event.inputs.environment }}" \
           -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}" \
@@ -66,12 +68,17 @@ jobs:
     - name: Terraform Apply
       if: github.event.inputs.action == 'deploy'
       working-directory: terraform/complete-3tier
-      run: terraform apply -auto-approve tfplan
+      run: |
+        # Use simplified configuration for AWS Academy
+        cp main-simple.tf main.tf
+        terraform apply -auto-approve tfplan
 
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
       working-directory: terraform/complete-3tier
       run: |
+        # Use simplified configuration for AWS Academy
+        cp main-simple.tf main.tf
         terraform destroy -auto-approve \
           -var="environment=${{ github.event.inputs.environment }}" \
           -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}"
