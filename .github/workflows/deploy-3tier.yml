@@ -49,11 +49,7 @@ jobs:
     - name: Terraform Init
       working-directory: terraform/complete-3tier
       run: |
-        terraform init \
-          -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
-          -backend-config="key=3tier/${{ github.event.inputs.environment }}/terraform.tfstate" \
-          -backend-config="region=${{ secrets.AWS_DEFAULT_REGION }}" \
-          -backend-config="dynamodb_table=${{ secrets.TF_STATE_DYNAMODB_TABLE }}"
+        terraform init
 
     - name: Terraform Validate
       working-directory: terraform/complete-3tier

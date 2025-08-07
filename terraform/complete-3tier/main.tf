@@ -14,9 +14,10 @@ terraform {
     }
   }
 
-  backend "s3" {
-    # Backend configuration provided via CLI
-  }
+  # Using local state due to AWS Academy S3 restrictions
+  # backend "s3" {
+  #   # Backend configuration provided via CLI
+  # }
 }
 
 provider "aws" {
