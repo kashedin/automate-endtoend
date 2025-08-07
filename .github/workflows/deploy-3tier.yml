@@ -59,7 +59,7 @@ jobs:
       working-directory: terraform/complete-3tier
       run: |
         # Use simplified configuration for AWS Academy
-        mv main.tf main-original.tf
+        rm -f main.tf
         cp main-simple.tf main.tf
         terraform plan \
           -var="environment=${{ github.event.inputs.environment }}" \
@@ -71,7 +71,7 @@ jobs:
       working-directory: terraform/complete-3tier
       run: |
         # Use simplified configuration for AWS Academy
-        mv main.tf main-original.tf
+        rm -f main.tf
         cp main-simple.tf main.tf
         terraform apply -auto-approve tfplan
 
@@ -80,7 +80,7 @@ jobs:
       working-directory: terraform/complete-3tier
       run: |
         # Use simplified configuration for AWS Academy
-        mv main.tf main-original.tf
+        rm -f main.tf
         cp main-simple.tf main.tf
         terraform destroy -auto-approve \
           -var="environment=${{ github.event.inputs.environment }}" \
