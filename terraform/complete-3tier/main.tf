@@ -158,7 +158,7 @@ resource "aws_subnet" "private_db" {
 resource "aws_eip" "nat" {
   count = 2
 
-  domain = "vpc"
+  domain     = "vpc"
   depends_on = [aws_internet_gateway.main]
 
   tags = {
@@ -490,8 +490,8 @@ resource "aws_db_instance" "main" {
 
   # Backup settings
   backup_retention_period = 7
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "sun:04:00-sun:05:00"
+  backup_window           = "03:00-04:00"
+  maintenance_window      = "sun:04:00-sun:05:00"
 
   # Parameter group
   parameter_group_name = aws_db_parameter_group.main.name
@@ -584,10 +584,10 @@ resource "aws_launch_template" "app" {
 
 # Auto Scaling Group for Web Tier
 resource "aws_autoscaling_group" "web" {
-  name                = "${var.environment}-web-asg"
-  vpc_zone_identifier = aws_subnet.private_web[*].id
-  target_group_arns   = [aws_lb_target_group.web.arn]
-  health_check_type   = "ELB"
+  name                      = "${var.environment}-web-asg"
+  vpc_zone_identifier       = aws_subnet.private_web[*].id
+  target_group_arns         = [aws_lb_target_group.web.arn]
+  health_check_type         = "ELB"
   health_check_grace_period = 300
 
   min_size         = 1
@@ -620,9 +620,9 @@ resource "aws_autoscaling_group" "web" {
 
 # Auto Scaling Group for App Tier
 resource "aws_autoscaling_group" "app" {
-  name                = "${var.environment}-app-asg"
-  vpc_zone_identifier = aws_subnet.private_app[*].id
-  health_check_type   = "EC2"
+  name                      = "${var.environment}-app-asg"
+  vpc_zone_identifier       = aws_subnet.private_app[*].id
+  health_check_type         = "EC2"
   health_check_grace_period = 300
 
   min_size         = 1
