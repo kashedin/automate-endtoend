@@ -47,20 +47,17 @@ jobs:
         terraform_version: ${{ env.TF_VERSION }}
 
     - name: Terraform Init
-      working-directory: terraform/complete-3tier
+      working-directory: terraform/simple-3tier
       run: |
         terraform init
 
     - name: Terraform Validate
-      working-directory: terraform/complete-3tier
+      working-directory: terraform/simple-3tier
       run: terraform validate
 
     - name: Terraform Plan
-      working-directory: terraform/complete-3tier
+      working-directory: terraform/simple-3tier
       run: |
-        # Use simplified configuration for AWS Academy
-        rm -f main.tf
-        cp main-simple.tf main.tf
         terraform plan \
           -var="environment=${{ github.event.inputs.environment }}" \
           -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}" \
@@ -68,20 +65,14 @@ jobs:
 
     - name: Terraform Apply
       if: github.event.inputs.action == 'deploy'
-      working-directory: terraform/complete-3tier
+      working-directory: terraform/simple-3tier
       run: |
-        # Use simplified configuration for AWS Academy
-        rm -f main.tf
-        cp main-simple.tf main.tf
         terraform apply -auto-approve tfplan
 
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
-      working-directory: terraform/complete-3tier
+      working-directory: terraform/simple-3tier
       run: |
-        # Use simplified configuration for AWS Academy
-        rm -f main.tf
-        cp main-simple.tf main.tf
         terraform destroy -auto-approve \
           -var="environment=${{ github.event.inputs.environment }}" \
           -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}"
@@ -89,7 +80,7 @@ jobs:
     - name: Get Outputs
       if: github.event.inputs.action == 'deploy'
       id: outputs
-      working-directory: terraform/complete-3tier
+      working-directory: terraform/simple-3tier
       run: |
         echo "APPLICATION_URL=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
         echo "VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
