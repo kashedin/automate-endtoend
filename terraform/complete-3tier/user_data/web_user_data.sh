@@ -191,15 +191,15 @@ EOF
 
 chmod +x /var/www/html/instance-info
 
-# Configure Apache to handle API requests (proxy to app tier)
-cat > /etc/httpd/conf.d/proxy.conf << 'EOF'
+# Configure Apache to handle API requests (proxy to app tier via internal load balancer)
+cat > /etc/httpd/conf.d/proxy.conf << EOF
 LoadModule proxy_module modules/mod_proxy.so
 LoadModule proxy_http_module modules/mod_proxy_http.so
 
-# Proxy API requests to app tier (will be configured via service discovery)
+# Proxy API requests to app tier internal load balancer
 ProxyPreserveHost On
-ProxyPass /api/ http://localhost:8080/
-ProxyPassReverse /api/ http://localhost:8080/
+ProxyPass /api/ http://${app_internal_lb_dns}/
+ProxyPassReverse /api/ http://${app_internal_lb_dns}/
 
 # Handle instance-info requests
 ScriptAlias /instance-info /var/www/html/instance-info

@@ -435,6 +435,59 @@ resource "aws_lb_listener" "web" {
   }
 }
 
+# Internal Load Balancer for App Tier
+resource "aws_lb" "app_internal" {
+  name               = "${var.environment}-app-internal-alb"
+  internal           = true
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.app.id]
+  subnets            = aws_subnet.private_app[*].id
+
+  enable_deletion_protection = false
+
+  tags = {
+    Name        = "${var.environment}-app-internal-alb"
+    Environment = var.environment
+    Tier        = "app-load-balancer"
+  }
+}
+
+resource "aws_lb_target_group" "app" {
+  name     = "${var.environment}-app-tg"
+  port     = 8080
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.main.id
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    unhealthy_threshold = 3
+    timeout             = 5
+    interval            = 30
+    path                = "/health"
+    matcher             = "200"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+  }
+
+  tags = {
+    Name        = "${var.environment}-app-tg"
+    Environment = var.environment
+    Tier        = "app"
+  }
+}
+
+resource "aws_lb_listener" "app" {
+  load_balancer_arn = aws_lb.app_internal.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app.arn
+  }
+}
+
 # =============================================================================
 # DATABASE TIER (RDS MySQL)
 # =============================================================================
@@ -497,9 +550,8 @@ resource "aws_db_instance" "main" {
   # Parameter group
   parameter_group_name = aws_db_parameter_group.main.name
 
-  # Monitoring
-  monitoring_interval = 60
-  monitoring_role_arn = null # Would use IAM role in production
+  # Monitoring - disabled for AWS Academy sandbox
+  monitoring_interval = 0
 
   # Deletion settings
   skip_final_snapshot = true
@@ -529,8 +581,9 @@ resource "aws_launch_template" "web" {
   }
 
   user_data = base64encode(templatefile("${path.module}/user_data/web_user_data.sh", {
-    app_server_url = aws_lb.main.dns_name
-    environment    = var.environment
+    app_server_url     = aws_lb.main.dns_name
+    app_internal_lb_dns = aws_lb.app_internal.dns_name
+    environment        = var.environment
   }))
 
   tag_specifications {
@@ -623,7 +676,8 @@ resource "aws_autoscaling_group" "web" {
 resource "aws_autoscaling_group" "app" {
   name                      = "${var.environment}-app-asg"
   vpc_zone_identifier       = aws_subnet.private_app[*].id
-  health_check_type         = "EC2"
+  target_group_arns         = [aws_lb_target_group.app.arn]
+  health_check_type         = "ELB"
   health_check_grace_period = 300
 
   min_size         = 1
@@ -692,4 +746,9 @@ output "private_app_subnets" {
 output "private_db_subnets" {
   description = "IDs of the private database subnets"
   value       = aws_subnet.private_db[*].id
+}
+
+output "app_internal_lb_dns" {
+  description = "DNS name of the internal app tier load balancer"
+  value       = aws_lb.app_internal.dns_name
 }
