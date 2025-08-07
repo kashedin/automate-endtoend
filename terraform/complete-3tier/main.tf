@@ -155,28 +155,24 @@ resource "aws_subnet" "private_db" {
   }
 }
 
-# Elastic IPs for NAT Gateways
+# Elastic IP for NAT Gateway (single NAT for cost optimization)
 resource "aws_eip" "nat" {
-  count = 2
-
   domain     = "vpc"
   depends_on = [aws_internet_gateway.main]
 
   tags = {
-    Name        = "${var.environment}-nat-eip-${count.index + 1}"
+    Name        = "${var.environment}-nat-eip-${random_id.suffix.hex}"
     Environment = var.environment
   }
 }
 
-# NAT Gateways
+# NAT Gateway (single NAT for cost optimization)
 resource "aws_nat_gateway" "main" {
-  count = 2
-
-  allocation_id = aws_eip.nat[count.index].id
-  subnet_id     = aws_subnet.public[count.index].id
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public[0].id
 
   tags = {
-    Name        = "${var.environment}-nat-${count.index + 1}"
+    Name        = "${var.environment}-nat-${random_id.suffix.hex}"
     Environment = var.environment
   }
 
@@ -205,7 +201,7 @@ resource "aws_route_table" "private" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
+    nat_gateway_id = aws_nat_gateway.main.id
   }
 
   tags = {
@@ -638,7 +634,7 @@ resource "aws_launch_template" "app" {
 
 # Auto Scaling Group for Web Tier
 resource "aws_autoscaling_group" "web" {
-  name                      = "${var.environment}-web-asg"
+  name                      = "${var.environment}-web-asg-${random_id.suffix.hex}"
   vpc_zone_identifier       = aws_subnet.private_web[*].id
   target_group_arns         = [aws_lb_target_group.web.arn]
   health_check_type         = "ELB"
@@ -655,7 +651,7 @@ resource "aws_autoscaling_group" "web" {
 
   tag {
     key                 = "Name"
-    value               = "${var.environment}-web-asg"
+    value               = "${var.environment}-web-asg-${random_id.suffix.hex}"
     propagate_at_launch = false
   }
 
@@ -674,7 +670,7 @@ resource "aws_autoscaling_group" "web" {
 
 # Auto Scaling Group for App Tier
 resource "aws_autoscaling_group" "app" {
-  name                      = "${var.environment}-app-asg"
+  name                      = "${var.environment}-app-asg-${random_id.suffix.hex}"
   vpc_zone_identifier       = aws_subnet.private_app[*].id
   target_group_arns         = [aws_lb_target_group.app.arn]
   health_check_type         = "ELB"
@@ -691,7 +687,7 @@ resource "aws_autoscaling_group" "app" {
 
   tag {
     key                 = "Name"
-    value               = "${var.environment}-app-asg"
+    value               = "${var.environment}-app-asg-${random_id.suffix.hex}"
     propagate_at_launch = false
   }
 
