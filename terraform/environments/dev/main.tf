@@ -62,10 +62,11 @@ module "networking" {
 module "security" {
   source = "../../modules/security"
 
-  environment = local.environment
-  vpc_id      = module.networking.vpc_id
-  vpc_cidr    = var.vpc_cidr
-  common_tags = local.common_tags
+  environment   = local.environment
+  vpc_id        = module.networking.vpc_id
+  vpc_cidr      = var.vpc_cidr
+  lab_role_name = "LabRole"
+  common_tags   = local.common_tags
 }
 
 # Database Module

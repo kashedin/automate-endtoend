@@ -10,30 +10,30 @@ private_web_subnet_cidrs  = ["10.0.10.0/24", "10.0.11.0/24"]
 private_app_subnet_cidrs  = ["10.0.20.0/24", "10.0.21.0/24"]
 private_data_subnet_cidrs = ["10.0.30.0/24", "10.0.31.0/24"]
 
-# Environment-specific settings (production-grade with high availability)
+# Environment-specific settings (production-grade with sandbox constraints)
 environment_config = {
   name                = "prod"
   instance_type       = "t3.small"
   min_capacity        = 2
-  max_capacity        = 8
-  desired_capacity    = 3
+  max_capacity        = 4  # Reduced to comply with sandbox limits
+  desired_capacity    = 2  # Reduced to comply with sandbox limits
   db_instance_class   = "db.t3.medium"
   backup_retention    = 30
   monitoring_enabled  = true
   cost_alerts_enabled = true
 }
 
-# Auto Scaling Group configurations
+# Auto Scaling Group configurations (sandbox-compliant)
 web_asg_config = {
   min_size         = 2
-  max_size         = 8
-  desired_capacity = 3
+  max_size         = 4  # Reduced from 8 to comply with 6 instances/ASG limit
+  desired_capacity = 2  # Reduced from 3 to stay within 9 total instance limit
 }
 
 app_asg_config = {
-  min_size         = 2
-  max_size         = 6
-  desired_capacity = 3
+  min_size         = 1  # Reduced from 2 to stay within 9 total instance limit
+  max_size         = 4  # Reduced from 6 to comply with 6 instances/ASG limit
+  desired_capacity = 2  # Reduced from 3 to stay within 9 total instance limit
 }
 
 # Aurora configuration for production
@@ -50,7 +50,7 @@ aurora_config = {
   deletion_protection          = true
   skip_final_snapshot          = false
   copy_tags_to_snapshot        = true
-  reader_count                 = 1 # One reader instance for HA
+  reader_count                 = 0 # Reduced to 0 to stay within 9 total instance limit
   auto_scaling_enabled         = true
   auto_scaling_min_capacity    = 1
   auto_scaling_max_capacity    = 3

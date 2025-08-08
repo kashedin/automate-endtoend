@@ -18,7 +18,7 @@ variable "vpc_cidr" {
 variable "lab_role_name" {
   description = "Name of the existing lab role to use"
   type        = string
-  default     = "labrole"
+  default     = "LabRole"
 }
 
 variable "common_tags" {
