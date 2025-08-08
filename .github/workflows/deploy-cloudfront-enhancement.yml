@@ -1,0 +1,117 @@
+name: Deploy CloudFront Enhancement
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+      terraform_action:
+        description: 'Terraform action to perform'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+        - plan
+        - apply
+        - destroy
+
+env:
+  AWS_DEFAULT_REGION: us-west-2
+  TF_VAR_aws_region: us-west-2
+
+jobs:
+  deploy-cloudfront:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.6.0
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+    - name: Terraform Init
+      run: |
+        cd terraform/sandbox-3tier
+        terraform init
+
+    - name: Terraform Validate
+      run: |
+        cd terraform/sandbox-3tier
+        terraform validate
+
+    - name: Terraform Plan
+      if: ${{ github.event.inputs.terraform_action == 'plan' || github.event.inputs.terraform_action == 'apply' }}
+      run: |
+        cd terraform/sandbox-3tier
+        terraform plan \
+          -var="environment=${{ github.event.inputs.environment }}" \
+          -out=tfplan
+
+    - name: Terraform Apply
+      if: ${{ github.event.inputs.terraform_action == 'apply' }}
+      run: |
+        cd terraform/sandbox-3tier
+        terraform apply -auto-approve tfplan
+
+    - name: Terraform Destroy
+      if: ${{ github.event.inputs.terraform_action == 'destroy' }}
+      run: |
+        cd terraform/sandbox-3tier
+        terraform destroy -auto-approve \
+          -var="environment=${{ github.event.inputs.environment }}"
+
+    - name: Output CloudFront URL
+      if: ${{ github.event.inputs.terraform_action == 'apply' }}
+      run: |
+        cd terraform/sandbox-3tier
+        echo "## 🚀 CloudFront Enhancement Deployed Successfully!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region**: ${{ env.AWS_DEFAULT_REGION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Terraform Action**: ${{ github.event.inputs.terraform_action }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🌐 Access URLs" >> $GITHUB_STEP_SUMMARY
+        echo "- **CloudFront HTTPS URL**: $(terraform output -raw cloudfront_https_url)" >> $GITHUB_STEP_SUMMARY
+        echo "- **ALB HTTP URL**: $(terraform output -raw application_url)" >> $GITHUB_STEP_SUMMARY
+        echo "- **S3 Static Website**: $(terraform output -raw s3_static_website_url)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Features Enabled" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ CloudFront CDN with global edge locations" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ HTTPS-only access with automatic HTTP redirect" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ S3 static website failover" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Security headers policy" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Origin Access Control (OAC) for S3" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Cost-optimized PriceClass_100 distribution" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔒 Security Enhancements" >> $GITHUB_STEP_SUMMARY
+        echo "- HTTPS enforcement with TLS 1.2+" >> $GITHUB_STEP_SUMMARY
+        echo "- Strict Transport Security (HSTS) headers" >> $GITHUB_STEP_SUMMARY
+        echo "- Content Security Policy headers" >> $GITHUB_STEP_SUMMARY
+        echo "- X-Frame-Options protection" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "🎉 **Your enterprise-grade infrastructure is now live with CloudFront CDN!**" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Terraform Plan
+      if: ${{ github.event.inputs.terraform_action == 'plan' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-plan-${{ github.event.inputs.environment }}
+        path: terraform/sandbox-3tier/tfplan
+        retention-days: 5

@@ -607,8 +607,9 @@ resource "aws_cloudfront_distribution" "static_website" {
   })
 }
 
-# Update S3 bucket policy to allow CloudFront access (replaces the public policy)
+# S3 bucket policy to allow CloudFront access via OAC
 resource "aws_s3_bucket_policy" "static_website_cloudfront" {
+  count  = var.cloudfront_distribution_arn != "" ? 1 : 0
   bucket = aws_s3_bucket.static_website.id
 
   policy = jsonencode({
@@ -624,7 +625,7 @@ resource "aws_s3_bucket_policy" "static_website_cloudfront" {
         Resource = "${aws_s3_bucket.static_website.arn}/*"
         Condition = {
           StringEquals = {
-            "AWS:SourceArn" = aws_cloudfront_distribution.static_website.arn
+            "AWS:SourceArn" = var.cloudfront_distribution_arn
           }
         }
       }

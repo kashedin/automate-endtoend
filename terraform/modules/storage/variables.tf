@@ -60,3 +60,9 @@ variable "bucket_config" {
     destination_bucket   = ""
   }
 }
+
+variable "cloudfront_distribution_arn" {
+  description = "ARN of the CloudFront distribution for S3 bucket policy"
+  type        = string
+  default     = ""
+}

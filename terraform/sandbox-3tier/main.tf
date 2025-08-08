@@ -761,6 +761,56 @@ resource "aws_autoscaling_group" "app" {
 }
 
 # =============================================================================
+# STORAGE MODULE (S3 Buckets)
+# =============================================================================
+
+module "storage" {
+  source = "../modules/storage"
+
+  environment                   = var.environment
+  force_destroy_buckets        = true  # For sandbox environment
+  log_retention_days           = 30    # Reduced for sandbox
+  backup_retention_days        = 90    # Reduced for sandbox
+  enable_cross_region_replication = false
+  cloudfront_distribution_arn  = module.cdn.cloudfront_distribution_arn
+
+  bucket_config = {
+    versioning_enabled   = true
+    encryption_enabled   = false  # Simplified for sandbox
+    public_read_enabled  = false
+    lifecycle_enabled    = true
+    logging_enabled      = true
+    enable_notifications = false
+    destination_bucket   = ""
+  }
+
+  common_tags = {
+    Environment = var.environment
+    Project     = "3tier-architecture"
+    ManagedBy   = "terraform"
+  }
+}
+
+# =============================================================================
+# CDN MODULE (CloudFront)
+# =============================================================================
+
+module "cdn" {
+  source = "../modules/cdn"
+
+  project_name              = "${var.environment}-3tier-${random_id.suffix.hex}"
+  alb_dns_name             = aws_lb.main.dns_name
+  s3_bucket_domain_name    = module.storage.static_website_bucket_regional_domain_name
+  price_class              = "PriceClass_100"  # Cost-optimized for sandbox
+
+  tags = {
+    Environment = var.environment
+    Project     = "3tier-architecture"
+    ManagedBy   = "terraform"
+  }
+}
+
+# =============================================================================
 # OUTPUTS
 # =============================================================================
 
@@ -803,4 +853,25 @@ output "private_app_subnets" {
 output "private_db_subnets" {
   description = "IDs of the private database subnets"
   value       = aws_subnet.private_db[*].id
+}
+
+# CloudFront and S3 outputs
+output "cloudfront_domain_name" {
+  description = "CloudFront distribution domain name"
+  value       = module.cdn.cloudfront_domain_name
+}
+
+output "cloudfront_https_url" {
+  description = "HTTPS URL for the application via CloudFront"
+  value       = module.cdn.cloudfront_https_url
+}
+
+output "s3_static_website_bucket" {
+  description = "S3 static website bucket name"
+  value       = module.storage.static_website_bucket_id
+}
+
+output "s3_static_website_url" {
+  description = "S3 static website URL"
+  value       = module.storage.static_website_url
 }

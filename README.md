@@ -21,9 +21,23 @@ The infrastructure deploys a three-tier web application architecture:
 - **Aurora MySQL**: Highly available database cluster
 - **Auto Scaling Groups**: Scalable compute infrastructure
 - **Application Load Balancer**: Traffic distribution and SSL termination
+- **CloudFront CDN**: Global content delivery with S3 failover ⭐ **NEW**
 - **CloudWatch**: Comprehensive monitoring and alerting
 - **Parameter Store**: Secure credential management
 - **S3**: Static content and backup storage
+
+### 🚀 CloudFront Enhancement
+
+This project now includes **enterprise-grade CloudFront CDN** with the following features:
+
+- **🌐 Global Content Delivery**: Edge locations worldwide for faster load times
+- **🔒 HTTPS-Only Access**: Automatic HTTP to HTTPS redirect with TLS 1.2+
+- **🛡️ Enhanced Security**: Security headers policy (HSTS, CSP, X-Frame-Options)
+- **⚡ Automatic Failover**: ALB primary origin with S3 static site failover
+- **💰 Cost Optimized**: PriceClass_100 for sandbox budget compliance
+- **🔐 Origin Access Control**: Secure S3 access via OAC
+
+**📖 See [CLOUDFRONT_ENHANCEMENT.md](CLOUDFRONT_ENHANCEMENT.md) for detailed implementation guide.**
 
 ## Project Structure
 

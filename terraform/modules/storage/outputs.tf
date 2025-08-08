@@ -16,6 +16,11 @@ output "static_website_bucket_domain_name" {
   value       = aws_s3_bucket.static_website.bucket_domain_name
 }
 
+output "static_website_bucket_regional_domain_name" {
+  description = "Regional domain name of the static website S3 bucket"
+  value       = aws_s3_bucket.static_website.bucket_regional_domain_name
+}
+
 output "static_website_url" {
   description = "URL of the static website"
   value       = "http://${aws_s3_bucket.static_website.bucket}.s3-website-${data.aws_region.current.name}.amazonaws.com"
