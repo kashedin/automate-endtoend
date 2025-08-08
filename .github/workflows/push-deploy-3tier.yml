@@ -53,29 +53,64 @@ jobs:
     - name: Terraform Apply
       working-directory: terraform/sandbox-3tier
       run: |
-        echo "⚠️ DEPLOYMENT DISABLED FOR VALIDATION"
-        echo "Terraform plan completed successfully. Ready for deployment when approved."
-        echo "To deploy, remove this validation block and re-run the workflow."
-        # terraform apply -auto-approve tfplan
+        echo "🚀 DEPLOYING SANDBOX-OPTIMIZED 3-TIER ARCHITECTURE"
+        terraform apply -auto-approve tfplan
 
     - name: Get Outputs
       id: outputs
       working-directory: terraform/sandbox-3tier
       run: |
-        echo "⚠️ VALIDATION MODE - No outputs available"
-        echo "APPLICATION_URL=Not deployed (validation mode)" >> $GITHUB_OUTPUT
-        echo "VPC_ID=Not deployed (validation mode)" >> $GITHUB_OUTPUT
-        echo "DATABASE_ENDPOINT=Not deployed (validation mode)" >> $GITHUB_OUTPUT
+        echo "📊 GETTING DEPLOYMENT OUTPUTS"
+        echo "APPLICATION_URL=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "DATABASE_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
 
     - name: Wait for Application to be Ready
       run: |
-        echo "⚠️ VALIDATION MODE - Skipping application readiness check"
-        echo "In deployment mode, this step would wait for the application to be ready"
+        APP_URL="${{ steps.outputs.outputs.APPLICATION_URL }}"
+        
+        if [ "$APP_URL" != "Not available" ]; then
+          echo "⏳ Waiting for application to be ready..."
+          timeout=600  # 10 minutes
+          counter=0
+          
+          while [ $counter -lt $timeout ]; do
+            if curl -s -f "$APP_URL" > /dev/null 2>&1; then
+              echo "✅ Application is responding at $APP_URL"
+              break
+            fi
+            echo "⏳ Waiting for application... ($counter/600 seconds)"
+            sleep 30
+            counter=$((counter + 30))
+          done
+        else
+          echo "⚠️ Application URL not available"
+        fi
 
     - name: Test Application Health
       run: |
-        echo "⚠️ VALIDATION MODE - Skipping health tests"
-        echo "In deployment mode, this step would test application health endpoints"
+        APP_URL="${{ steps.outputs.outputs.APPLICATION_URL }}"
+        
+        if [ "$APP_URL" != "Not available" ]; then
+          echo "🔍 Testing application health endpoints..."
+          
+          # Test main page
+          if curl -s -f "$APP_URL" > /dev/null; then
+            echo "✅ Main page is accessible"
+          else
+            echo "❌ Main page is not accessible"
+          fi
+          
+          # Test health endpoint
+          sleep 60
+          if curl -s -f "$APP_URL/health" > /dev/null; then
+            echo "✅ Health endpoint is responding"
+          else
+            echo "⚠️ Health endpoint is not yet responding (instances may still be initializing)"
+          fi
+        else
+          echo "⚠️ Skipping health tests - Application URL not available"
+        fi
 
     - name: Deployment Summary
       run: |
@@ -109,18 +144,13 @@ jobs:
         - ✅ Security group restrictions
         - ✅ Parameter group optimization
         
-        ## ⚠️ VALIDATION MODE ACTIVE
+        ## 📊 Deployment Details
         
-        **This workflow is currently in validation mode and will NOT deploy resources to AWS.**
-        
-        ## 📊 Validation Results
-        
-        | Check | Status |
-        |-------|--------|
-        | **Terraform Init** | ✅ Passed |
-        | **Terraform Validate** | ✅ Passed |
-        | **Terraform Plan** | ✅ Passed |
-        | **Sandbox Compliance** | ✅ Verified |
+        | Component | Details |
+        |-----------|---------|
+        | **Application URL** | ${{ steps.outputs.outputs.APPLICATION_URL }} |
+        | **VPC ID** | ${{ steps.outputs.outputs.VPC_ID }} |
+        | **Database Endpoint** | ${{ steps.outputs.outputs.DATABASE_ENDPOINT }} |
         
         ## 🚀 Next Steps
         
