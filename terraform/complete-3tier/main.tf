@@ -577,9 +577,9 @@ resource "aws_launch_template" "web" {
   }
 
   user_data = base64encode(templatefile("${path.module}/user_data/web_user_data.sh", {
-    app_server_url     = aws_lb.main.dns_name
+    app_server_url      = aws_lb.main.dns_name
     app_internal_lb_dns = aws_lb.app_internal.dns_name
-    environment        = var.environment
+    environment         = var.environment
   }))
 
   tag_specifications {
@@ -711,16 +711,16 @@ resource "aws_autoscaling_group" "app" {
 module "storage" {
   source = "../modules/storage"
 
-  environment                   = var.environment
-  force_destroy_buckets        = true  # For sandbox environment
-  log_retention_days           = 90
-  backup_retention_days        = 365
+  environment                     = var.environment
+  force_destroy_buckets           = true # For sandbox environment
+  log_retention_days              = 90
+  backup_retention_days           = 365
   enable_cross_region_replication = false
-  cloudfront_distribution_arn  = module.cdn.cloudfront_distribution_arn
+  cloudfront_distribution_arn     = module.cdn.cloudfront_distribution_arn
 
   bucket_config = {
     versioning_enabled   = true
-    encryption_enabled   = false  # Simplified for sandbox
+    encryption_enabled   = false # Simplified for sandbox
     public_read_enabled  = false
     lifecycle_enabled    = true
     logging_enabled      = true
@@ -742,10 +742,10 @@ module "storage" {
 module "cdn" {
   source = "../modules/cdn"
 
-  project_name              = "${var.environment}-3tier-${random_id.suffix.hex}"
-  alb_dns_name             = aws_lb.main.dns_name
-  s3_bucket_domain_name    = module.storage.static_website_bucket_regional_domain_name
-  price_class              = "PriceClass_100"  # Cost-optimized for sandbox
+  project_name          = "${var.environment}-3tier-${random_id.suffix.hex}"
+  alb_dns_name          = aws_lb.main.dns_name
+  s3_bucket_domain_name = module.storage.static_website_bucket_regional_domain_name
+  price_class           = "PriceClass_100" # Cost-optimized for sandbox
 
   tags = {
     Environment = var.environment

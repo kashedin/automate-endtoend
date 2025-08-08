@@ -2,9 +2,14 @@
 # This module creates a CloudFront distribution for global content delivery
 # with automatic failover from ALB to S3 static site
 
-# Data source for existing LabRole
-data "aws_iam_role" "lab_role" {
-  name = "LabRole"
+terraform {
+  required_version = ">= 1.6.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
 }
 
 # CloudFront Origin Access Control for S3
