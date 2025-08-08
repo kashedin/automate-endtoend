@@ -643,7 +643,7 @@ resource "aws_launch_template" "app" {
     db_endpoint = aws_db_instance.main.endpoint
     db_name     = aws_db_instance.main.db_name
     db_username = aws_db_instance.main.username
-    db_password = "TempPassword123!" # In production, use Parameter Store
+    db_password = "TempPassword123!"
     environment = var.environment
   }))
 
