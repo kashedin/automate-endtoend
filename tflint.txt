@@ -1,3 +1,4 @@
+1s
 Run for module in terraform/modules/*/; do
   for module in terraform/modules/*/; do
     echo "Linting module: $module"
@@ -9,9 +10,13 @@ Run for module in terraform/modules/*/; do
   env:
     TF_VERSION: 1.6.0
 Linting module: terraform/modules/cdn/
-3 issue(s) found:
+Linting module: terraform/modules/compute/
+Linting module: terraform/modules/database/
+Linting module: terraform/modules/monitoring/
+Linting module: terraform/modules/networking/
+Linting module: terraform/modules/security/
+Linting module: terraform/modules/storage/
+1 issue(s) found:
 
-Warning: main.tf:55:1: Warning - Missing version constraint for provider "aws" in `required_providers` (terraform_required_providers)
-:0:0: Warning - terraform "required_version" attribute is required (terraform_required_version)
-Warning: main.tf:6:1: Warning - data "aws_iam_role" "lab_role" is declared but not used (terraform_unused_declarations)
+Warning: variables.tf:34:1: Warning - variable "cloudfront_distribution_arn" is declared but not used (terraform_unused_declarations)
 Error: Process completed with exit code 2.

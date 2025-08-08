@@ -105,12 +105,11 @@ module "compute" {
 module "storage" {
   source = "../../modules/storage"
 
-  environment                 = local.environment
-  force_destroy_buckets       = false # Protect buckets in prod
-  log_retention_days          = 90
-  backup_retention_days       = 365
-  cloudfront_distribution_arn = module.cdn.cloudfront_distribution_arn
-  common_tags                 = local.common_tags
+  environment           = local.environment
+  force_destroy_buckets = false # Protect buckets in prod
+  log_retention_days    = 90
+  backup_retention_days = 365
+  common_tags           = local.common_tags
 }
 
 # Monitoring Module
