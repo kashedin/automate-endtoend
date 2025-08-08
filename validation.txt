@@ -16,41 +16,40 @@ RequestError [HttpError]: Not Found
       'referrer-policy': 'origin-when-cross-origin, strict-origin-when-cross-origin',
       server: 'github.com',
       'strict-transport-security': 'max-age=31536000; includeSubdomains; preload',
-      'transfer-encoding': 'chunked',
-      vary: 'Accept-Encoding, Accept, X-Requested-With',
-      'x-content-type-options': 'nosniff',
-      'x-frame-options': 'deny',
-      'x-github-api-version-selected': '2022-11-28',
-      'x-github-media-type': 'github.v3; format=json',
-      'x-github-request-id': '8400:1F33BB:233040A:7E64744:6895F360',
-      'x-ratelimit-limit': '5000',
-      'x-ratelimit-remaining': '4991',
-      'x-ratelimit-reset': '1754660159',
-      'x-ratelimit-resource': 'core',
-      'x-ratelimit-used': '9',
-      'x-xss-protection': '0'
-    },
-    data: {
-      message: 'Not Found',
-      documentation_url: 'https://docs.github.com/rest',
-      status: '404'
-    }
-  },
-  request: {
-    method: 'POST',
-    url: 'https://api.github.com/repos/kashedin/automate-endtoend/issues//comments',
-    headers: {
-      accept: 'application/vnd.github.v3+json',
-      'user-agent': 'actions/github-script octokit-core.js/5.0.1 Node.js/20.19.3 (linux; x64)',
-      authorization: 'token [REDACTED]',
-      'content-type': 'application/json; charset=utf-8'
-    },
-    body: '{"body":"#### Terraform Format Check 🖌`failure`\\n\\n<details><summary>Show Format Issues</summary>\\n\\n```\\nterraform/complete-3tier/main.tf\\n\\n```\\n\\n</details>\\n\\n*Pusher: @kashedin, Action: `push`, Workflow: `Terraform Validation`*"}',
-    request: {
-      agent: [Agent],
-      fetch: [Function: proxyFetch],
-      hook: [Function: bound bound register]
-    }
-  }
-}
-Error: Unhandled error: HttpError: Not Found
+Run cd terraform/environments/dev
+  cd terraform/environments/dev
+  terraform init -backend=false
+  shell: /usr/bin/bash -e {0}
+  env:
+    TF_VERSION: 1.6.0
+    TERRAFORM_CLI_PATH: /home/runner/work/_temp/1e18d015-61fb-4202-bf2c-75f6cf094de2
+Initializing modules...
+- compute in ../../modules/compute
+- database in ../../modules/database
+- monitoring in ../../modules/monitoring
+- networking in ../../modules/networking
+- security in ../../modules/security
+- storage in ../../modules/storage
+╷
+│ Error: Duplicate required providers configuration
+│ 
+│   on main.tf line 8, in terraform:
+│    8:   required_providers {
+│ 
+│ A module may have only one required providers configuration. The required
+│ providers were previously configured at main-simplified.tf:6,3-21.
+╵
+
+╷
+│ Error: Duplicate provider configuration
+│ 
+│   on main.tf line 24:
+│   24: provider "aws" {
+│ 
+│ A default (non-aliased) provider configuration for "aws" was already given
+│ at main-simplified.tf:22,1-15. If multiple configurations are required, set
+│ the "alias" argument for alternative configurations.
+╵
+
+Error: Terraform exited with code 1.
+Error: Process completed with exit code 1.

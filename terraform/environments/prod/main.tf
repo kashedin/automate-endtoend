@@ -105,11 +105,12 @@ module "compute" {
 module "storage" {
   source = "../../modules/storage"
 
-  environment           = local.environment
-  force_destroy_buckets = false # Protect buckets in prod
-  log_retention_days    = 90
-  backup_retention_days = 365
-  common_tags           = local.common_tags
+  environment                 = local.environment
+  force_destroy_buckets       = false # Protect buckets in prod
+  log_retention_days          = 90
+  backup_retention_days       = 365
+  cloudfront_distribution_arn = module.cdn.cloudfront_distribution_arn
+  common_tags                 = local.common_tags
 }
 
 # Monitoring Module
@@ -128,4 +129,16 @@ module "monitoring" {
   alert_email_addresses     = var.alert_email_addresses
   log_retention_days        = 90
   common_tags               = local.common_tags
+}
+
+# CDN Module
+module "cdn" {
+  source = "../../modules/cdn"
+
+  project_name          = "${local.environment}-3tier"
+  alb_dns_name          = module.compute.alb_dns_name
+  s3_bucket_domain_name = module.storage.static_website_bucket_regional_domain_name
+  price_class           = "PriceClass_200" # Better performance for prod
+
+  tags = local.common_tags
 }
