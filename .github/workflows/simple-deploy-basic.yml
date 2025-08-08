@@ -46,18 +46,18 @@ jobs:
         mv main-simplified.tf main.tf
         # Create minimal variables.tf
         cat > variables.tf << 'EOF'
-variable "environment" {
-  description = "Environment name"
-  type        = string
-  default     = "dev"
-}
-
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-west-2"
-}
-EOF
+        variable "environment" {
+          description = "Environment name"
+          type        = string
+          default     = "dev"
+        }
+        
+        variable "aws_region" {
+          description = "AWS region"
+          type        = string
+          default     = "us-west-2"
+        }
+        EOF
 
     - name: Terraform Init
       run: |
