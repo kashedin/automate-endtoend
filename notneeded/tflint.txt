@@ -1,0 +1,22 @@
+1s
+Run for module in terraform/modules/*/; do
+  for module in terraform/modules/*/; do
+    echo "Linting module: $module"
+    cd "$module"
+    tflint --format compact
+    cd - > /dev/null
+  done
+  shell: /usr/bin/bash -e {0}
+  env:
+    TF_VERSION: 1.6.0
+Linting module: terraform/modules/cdn/
+Linting module: terraform/modules/compute/
+Linting module: terraform/modules/database/
+Linting module: terraform/modules/monitoring/
+Linting module: terraform/modules/networking/
+Linting module: terraform/modules/security/
+Linting module: terraform/modules/storage/
+1 issue(s) found:
+
+Warning: variables.tf:34:1: Warning - variable "cloudfront_distribution_arn" is declared but not used (terraform_unused_declarations)
+Error: Process completed with exit code 2.
