@@ -553,11 +553,11 @@ resource "aws_db_instance" "main" {
   # Engine settings - sandbox compliant
   engine         = "mysql"
   engine_version = "8.0"
-  instance_class = "db.t3.micro"  # Sandbox constraint: db.t3.micro to db.t3.medium
+  instance_class = "db.t3.micro" # Sandbox constraint: db.t3.micro to db.t3.medium
 
   # Storage settings - sandbox compliant
-  allocated_storage     = 20   # Within 100GB limit
-  max_allocated_storage = 50   # Within 100GB limit
+  allocated_storage     = 20    # Within 100GB limit
+  max_allocated_storage = 50    # Within 100GB limit
   storage_type          = "gp2" # Sandbox allows gp2
   storage_encrypted     = false # KMS restrictions in sandbox
 
@@ -604,7 +604,7 @@ resource "aws_db_instance" "main" {
 resource "aws_launch_template" "web" {
   name_prefix   = "${var.environment}-web-${random_id.suffix.hex}-"
   image_id      = data.aws_ami.amazon_linux.id
-  instance_type = "t3.micro"  # Sandbox constraint: t2/t3 nano to medium
+  instance_type = "t3.micro" # Sandbox constraint: t2/t3 nano to medium
 
   vpc_security_group_ids = [aws_security_group.web.id]
 
@@ -643,7 +643,7 @@ resource "aws_launch_template" "web" {
 resource "aws_launch_template" "app" {
   name_prefix   = "${var.environment}-app-${random_id.suffix.hex}-"
   image_id      = data.aws_ami.amazon_linux.id
-  instance_type = "t3.micro"  # Sandbox constraint: t2/t3 nano to medium
+  instance_type = "t3.micro" # Sandbox constraint: t2/t3 nano to medium
 
   vpc_security_group_ids = [aws_security_group.app.id]
 
@@ -696,7 +696,7 @@ resource "aws_autoscaling_group" "web" {
 
   # Sandbox constraint: max 6 instances per ASG, max 9 total instances
   min_size         = 1
-  max_size         = 3  # Conservative to stay within limits
+  max_size         = 3 # Conservative to stay within limits
   desired_capacity = 2
 
   launch_template {
@@ -733,7 +733,7 @@ resource "aws_autoscaling_group" "app" {
 
   # Sandbox constraint: max 6 instances per ASG, max 9 total instances
   min_size         = 1
-  max_size         = 3  # Conservative to stay within limits
+  max_size         = 3 # Conservative to stay within limits
   desired_capacity = 2
 
   launch_template {
@@ -767,16 +767,16 @@ resource "aws_autoscaling_group" "app" {
 module "storage" {
   source = "../modules/storage"
 
-  environment                   = var.environment
-  force_destroy_buckets        = true  # For sandbox environment
-  log_retention_days           = 30    # Reduced for sandbox
-  backup_retention_days        = 90    # Reduced for sandbox
+  environment                     = var.environment
+  force_destroy_buckets           = true # For sandbox environment
+  log_retention_days              = 30   # Reduced for sandbox
+  backup_retention_days           = 90   # Reduced for sandbox
   enable_cross_region_replication = false
-  cloudfront_distribution_arn  = module.cdn.cloudfront_distribution_arn
+  cloudfront_distribution_arn     = module.cdn.cloudfront_distribution_arn
 
   bucket_config = {
     versioning_enabled   = true
-    encryption_enabled   = false  # Simplified for sandbox
+    encryption_enabled   = false # Simplified for sandbox
     public_read_enabled  = false
     lifecycle_enabled    = true
     logging_enabled      = true
@@ -798,10 +798,10 @@ module "storage" {
 module "cdn" {
   source = "../modules/cdn"
 
-  project_name              = "${var.environment}-3tier-${random_id.suffix.hex}"
-  alb_dns_name             = aws_lb.main.dns_name
-  s3_bucket_domain_name    = module.storage.static_website_bucket_regional_domain_name
-  price_class              = "PriceClass_100"  # Cost-optimized for sandbox
+  project_name          = "${var.environment}-3tier-${random_id.suffix.hex}"
+  alb_dns_name          = aws_lb.main.dns_name
+  s3_bucket_domain_name = module.storage.static_website_bucket_regional_domain_name
+  price_class           = "PriceClass_100" # Cost-optimized for sandbox
 
   tags = {
     Environment = var.environment

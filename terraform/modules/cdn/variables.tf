@@ -19,11 +19,11 @@ variable "price_class" {
   description = "CloudFront distribution price class"
   type        = string
   default     = "PriceClass_100"
-  
+
   validation {
     condition = contains([
       "PriceClass_All",
-      "PriceClass_200", 
+      "PriceClass_200",
       "PriceClass_100"
     ], var.price_class)
     error_message = "Price class must be PriceClass_All, PriceClass_200, or PriceClass_100."

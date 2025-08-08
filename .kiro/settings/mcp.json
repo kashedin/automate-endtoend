@@ -22,7 +22,8 @@
       ],
       "disabled": false,
       "autoApprove": [
-        "getProviderDocs"
+        "getProviderDocs",
+        "resolveProviderDocID"
       ]
     }
   }
