@@ -47,40 +47,35 @@ jobs:
         terraform_version: ${{ env.TF_VERSION }}
 
     - name: Terraform Init
-      working-directory: terraform/simple-3tier
+      working-directory: terraform/environments/${{ github.event.inputs.environment }}
       run: |
         terraform init
 
     - name: Terraform Validate
-      working-directory: terraform/simple-3tier
+      working-directory: terraform/environments/${{ github.event.inputs.environment }}
       run: terraform validate
 
     - name: Terraform Plan
-      working-directory: terraform/simple-3tier
+      working-directory: terraform/environments/${{ github.event.inputs.environment }}
       run: |
-        terraform plan \
-          -var="environment=${{ github.event.inputs.environment }}" \
-          -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}" \
-          -out=tfplan
+        terraform plan -out=tfplan
 
     - name: Terraform Apply
       if: github.event.inputs.action == 'deploy'
-      working-directory: terraform/simple-3tier
+      working-directory: terraform/environments/${{ github.event.inputs.environment }}
       run: |
         terraform apply -auto-approve tfplan
 
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
-      working-directory: terraform/simple-3tier
+      working-directory: terraform/environments/${{ github.event.inputs.environment }}
       run: |
-        terraform destroy -auto-approve \
-          -var="environment=${{ github.event.inputs.environment }}" \
-          -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}"
+        terraform destroy -auto-approve
 
     - name: Get Outputs
       if: github.event.inputs.action == 'deploy'
       id: outputs
-      working-directory: terraform/simple-3tier
+      working-directory: terraform/environments/${{ github.event.inputs.environment }}
       run: |
         echo "APPLICATION_URL=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
         echo "VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT

@@ -47,39 +47,36 @@ jobs:
 
     - name: Terraform Init
       run: |
-        cd terraform/sandbox-3tier
+        cd terraform/environments/${{ github.event.inputs.environment }}
         terraform init
 
     - name: Terraform Validate
       run: |
-        cd terraform/sandbox-3tier
+        cd terraform/environments/${{ github.event.inputs.environment }}
         terraform validate
 
     - name: Terraform Plan
       if: ${{ github.event.inputs.terraform_action == 'plan' || github.event.inputs.terraform_action == 'apply' }}
       run: |
-        cd terraform/sandbox-3tier
-        terraform plan \
-          -var="environment=${{ github.event.inputs.environment }}" \
-          -out=tfplan
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        terraform plan -out=tfplan
 
     - name: Terraform Apply
       if: ${{ github.event.inputs.terraform_action == 'apply' }}
       run: |
-        cd terraform/sandbox-3tier
+        cd terraform/environments/${{ github.event.inputs.environment }}
         terraform apply -auto-approve tfplan
 
     - name: Terraform Destroy
       if: ${{ github.event.inputs.terraform_action == 'destroy' }}
       run: |
-        cd terraform/sandbox-3tier
-        terraform destroy -auto-approve \
-          -var="environment=${{ github.event.inputs.environment }}"
+        cd terraform/environments/${{ github.event.inputs.environment }}
+        terraform destroy -auto-approve
 
     - name: Output CloudFront URL
       if: ${{ github.event.inputs.terraform_action == 'apply' }}
       run: |
-        cd terraform/sandbox-3tier
+        cd terraform/environments/${{ github.event.inputs.environment }}
         echo "## 🚀 CloudFront Enhancement Deployed Successfully!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📊 Deployment Summary" >> $GITHUB_STEP_SUMMARY
@@ -113,5 +110,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: terraform-plan-${{ github.event.inputs.environment }}
-        path: terraform/sandbox-3tier/tfplan
+        path: terraform/environments/${{ github.event.inputs.environment }}/tfplan
         retention-days: 5

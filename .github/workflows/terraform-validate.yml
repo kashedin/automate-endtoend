@@ -34,15 +34,7 @@ jobs:
       run: terraform fmt -check -recursive terraform/
       continue-on-error: true
 
-    - name: Terraform Init - Shared
-      run: |
-        cd terraform/shared
-        terraform init -backend=false
 
-    - name: Terraform Validate - Shared
-      run: |
-        cd terraform/shared
-        terraform validate
 
     - name: Terraform Init - Modules
       run: |
@@ -108,7 +100,6 @@ jobs:
           All Terraform configurations are valid and properly formatted!
 
           - ✅ Format check passed
-          - ✅ Shared configuration validated
           - ✅ All modules validated
           - ✅ Development environment validated
           - ✅ Production environment validated
