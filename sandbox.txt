@@ -1,0 +1,311 @@
+Sandbox Environment
+ 
+
+Lab Overview
+This is a sandbox environment for ad-hoc exploration of AWS services. This lab does not provide specific goals or steps like other labs. It is strongly recommended that you only create resources required to support your learning. All resources not in use should be either switched off or terminated.
+
+Prerequisites
+This Sandbox lab requires:
+
+Access to a notebook computer with Wi-Fi and Microsoft Windows, macOS, or Linux (Ubuntu, SuSE, or Red Hat)
+
+Note The lab environment is not accessible using an iPad or tablet device, but you can use these devices to access the student guide.
+
+An internet browser such as Chrome, Firefox, or Edge.
+
+ 
+
+Accessing the AWS Management Console
+At the top of these instructions, click  Start Lab to launch your lab.
+
+Tip: If you need more time to complete the lab, then restart the timer for the environment by choosing the  Start Lab button again.
+
+Lab resources will be displayed on the top left corner.
+
+Example:
+
+AWS  indicates that AWS lab resources are currently getting created.
+
+AWS  indicates that AWS lab resources are ready.
+
+Please wait for the lab to be ready, before proceeding.
+
+At the top of these instructions, click AWS 
+
+This will open the AWS Management Console in a new browser tab. The system will automatically log you in.
+
+Tip: If a new browser tab does not open, there will typically be a banner or icon at the top of your browser indicating that your browser is preventing the site from opening pop-up windows. Click on the banner or icon and choose "Allow pop ups."
+
+Arrange the AWS Management Console tab so that it displays along side these instructions. Ideally, you will be able to see both browser tabs at the same time, to make it easier to follow the lab steps.
+
+ Do not change the lab region unless specifically instructed to do so.
+
+ 
+
+Available Services
+You will be restricted to the following services and usage:
+
+Amazon Athena
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Cloud9
+
+Instances - t2 and t3 instances of type t*.nano to t*.small only.
+
+Other restrictions applied to Amazon EC2 also apply.
+
+AWS CloudFormation
+
+Lab AWS IAM permissions will also apply to AWS CloudFormation. 
+
+Amazon CloudFront
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+AWS CloudTrail
+
+Amazon CloudWatch
+
+Access to Monitoring, Events and Logs is enabled.
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Cognito
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon DynamoDB
+
+Purchasing Amazon DynamoDB Reserved Capacity is disabled.
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Elastic Compute Cloud (Amazon EC2)
+
+AMIs - Launch Amazon Linux 2, Amazon Linux, SUSE Linux, and Windows Server Base variants (without embedded databases) from the Quick Start AMI list is allowed.
+
+Instances - t2 and t3 instances of type t*.nano to t*.medium only.
+
+EBS volumes - sizes up to 100 GB and type General Purpose SSD (gp2 and gp3) and Cold HDD (sc1) are allowed.
+
+Purchasing Options - On-Demand instances are allowed. Other purchasing options are disabled.
+
+A maximum of nine running instances are permitted at a given time.
+
+Amazon EBS fast snapshot restore feature is disabled.
+
+LabInstanceProfile can be attached as an instance profile. It uses AWS IAM Role LabRole that is also pre-created in the lab. Creating an AWS IAM Role is restricted.
+
+  Note: Any instances that don't meet these requirements will be terminated and your account may be locked. Please exercise caution.
+
+Amazon EC2 Autoscaling
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Similar restrictions as Amazon EC2 apply. Additionally Autoscaling groups are limited to six instances.
+
+Note: Any instances that don't meet the defined Amazon EC2 requirements will be terminated and your account may be locked. Please exercise caution.
+
+Amazon Elastic Container Service (ECS)
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Similar restrictions as Amazon EC2 and Amazon EC2 AutoScaling apply.
+
+Note: Any instances that don't meet the defined requirements will be terminated and your account may be locked. Please exercise caution.
+
+Amazon Elastic Kubernetes Service (EKS)
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Similar restrictions as Amazon EC2 and Amazon EC2 AutoScaling apply.
+
+Note: Any instances that don't meet the defined requirements will be terminated and your account may be locked. Please exercise caution.
+
+Amazon Elastic Container Registry (ECR)
+
+Elastic Load Balancing
+
+Amazon Elastic File System (EFS)
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Glacier
+
+Amazon Glacier Vault Lock is disabled.
+
+Amazon Glue
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+AWS Lambda
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Route53
+
+Domain registrations and transfers are restricted.
+
+Amazon Relational Database Service (Amazon RDS)
+
+DatabaseEngine: Amazon Aurora, MySQL, PostgreSQL and MariaDB.
+
+Template: Choose Dev/Test or Free tier.
+
+DB instance size: Choose the Burstable class db.t3 instance of type db.t*.micro to db.t*.medium.
+
+Storage: Choose General Purpose SSD (gp2) of a size up to 100 GB. Provisioned IOPS access is restricted.
+
+Availability and durability: Avoid creating a standby instance.
+
+Purchasing Options: On-Demand instances are allowed. Other purchasing options are disabled.
+
+Amazon Systems Manager (SSM)
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+AWS Identity and Access Management (IAM)
+
+Read-only access is provided.
+
+Creating AWS IAM resources such as Users, Groups and Policies are restricted.
+
+Creating AWS IAM Roles is also restricted. Use LabRole if needed.
+
+AWS IoT
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+AWS IoT Analytics
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+AWS IoT Events
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Kinesis Data Streams
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Kinesis Firehose
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Kinesis Data Analytics
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+AWS Key Management Service (KMS) 
+
+Read-only access
+
+Amazon SageMaker
+
+Instances - ml.t and ml.m instances of type *.medium to *.xlarge only.
+
+Creating an AWS IAM Role is restricted. Use LabRole if needed.
+
+Amazon Simple Storage Service (Amazon S3)
+
+Amazon S3 Object Lock is disabled.
+
+Amazon S3 Object Lock legal hold and retention is disabled.
+
+Amazon Simple Notification Service (SNS)
+
+Amazon Simple Queue Service (SQS)
+
+Tagging
+
+ 
+
+SSH Access to any EC2 Instance(s) you launch
+Tip: When launching EC2 instances in the sandbox environment, create an SSH key (.pem file) at the time of launch and download it. Then use that key to connect. The steps below describe how to use the SSH key to connect to your instance.
+
+ Windows Users: Using SSH to Connect
+ These instructions are specifically for Windows users. If you are using macOS or Linux, skip to the next section.
+​
+
+Download  PuTTY to SSH into the Amazon EC2 instance. If you do not have PuTTY installed on your computer, download it here.
+
+Open putty.exe
+
+Configure PuTTY timeout to keep the PuTTY session open for a longer period of time.:
+
+Select Connection
+
+Set Seconds between keepalives to 30
+
+Configure your PuTTY session:
+
+Select Session
+
+Host Name (or IP address): Paste the Public DNS or IPv4 address of the instance you created. 
+Alternatively, return to the EC2 Console and select Instances. Check the box next to the instance you want to connect to and in the Description tab copy the IPv4 Public IP value.
+
+Back in PuTTY, in the Connection list, expand  SSH
+
+Select Auth (don't expand it)
+
+Select Browse
+
+Browse to and select the lab#.ppk file used for the instance.
+
+Select Open to select it
+
+Select Open again.
+
+Select Yes, to trust and connect to the host.
+
+When prompted login as, enter: ec2-user
+This will connect you to the EC2 instance.
+Note: For some flavors of linux the username may be different.
+
+Windows Users: Select here to skip ahead to the next task.
+
+
+​
+
+macOS  and Linux  Users
+These instructions are specifically for Mac/Linux users.
+​
+
+Open a terminal window, and change directory cd to the directory containing your Amazon EC2 instance *.pem file.
+
+For example, if your *.pem file was saved to your Downloads directory, run this command:
+
+cd ~/Downloads
+Change the permissions on the key to be read-only, by running this command:
+
+For example, if your *.pem file was labuser.pem 
+
+chmod 400 labsuser.pem
+Run the below command (replace <public-ip> with the address of your Amazon EC2 instance). 
+Alternatively, return to the EC2 Console and select Instances. Check the box next to the instance you want to connect to and in the Description tab copy the IPv4 Public IP value.
+
+Note: Some flavors of Linux may use a different user to login.
+
+ssh -i labsuser.pem ec2-user@<public-ip>
+Type yes when prompted to allow the first connection to this remote SSH server.
+Because you are using a key pair for authentication, you will not be prompted for a password.
+​
+Because you are using a key pair for authentication, you will not be prompted for a password.
+
+
+ 
+
+Practice and Explore
+The lab environment is now ready for you to explore. Once you are done, proceed to the End Lab section.
+
+ 
+
+End Lab
+ Congratulations! You have completed the lab.
+
+Choose  End Lab at the top of this page, and then select Yes to confirm that you want to end the lab.
+
+A panel indicates that DELETE has been initiated... You may close this message box now.
+
+A message Ended AWS Lab Successfully is briefly displayed, indicating that the lab has ended.

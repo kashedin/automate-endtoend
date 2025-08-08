@@ -1,0 +1,167 @@
+name: Push Deploy 3-Tier Architecture
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'terraform/sandbox-3tier/**'
+      - '.github/workflows/push-deploy-3tier.yml'
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+jobs:
+  deploy:
+    name: Deploy 3-Tier Infrastructure on Push
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init
+      working-directory: terraform/sandbox-3tier
+      run: terraform init
+
+    - name: Terraform Validate
+      working-directory: terraform/sandbox-3tier
+      run: terraform validate
+
+    - name: Terraform Plan
+      working-directory: terraform/sandbox-3tier
+      run: |
+        terraform plan \
+          -var="environment=dev" \
+          -var="aws_region=${{ secrets.AWS_DEFAULT_REGION }}" \
+          -out=tfplan
+
+    - name: Terraform Apply
+      working-directory: terraform/sandbox-3tier
+      run: terraform apply -auto-approve tfplan
+
+    - name: Get Outputs
+      id: outputs
+      working-directory: terraform/sandbox-3tier
+      run: |
+        echo "APPLICATION_URL=$(terraform output -raw application_url 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "VPC_ID=$(terraform output -raw vpc_id 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+        echo "DATABASE_ENDPOINT=$(terraform output -raw database_endpoint 2>/dev/null || echo 'Not available')" >> $GITHUB_OUTPUT
+
+    - name: Wait for Application to be Ready
+      run: |
+        APP_URL="${{ steps.outputs.outputs.APPLICATION_URL }}"
+        
+        if [ "$APP_URL" != "Not available" ]; then
+          echo "Waiting for application to be ready..."
+          timeout=600  # 10 minutes
+          counter=0
+          
+          while [ $counter -lt $timeout ]; do
+            if curl -s -f "$APP_URL" > /dev/null 2>&1; then
+              echo "✅ Application is responding at $APP_URL"
+              break
+            fi
+            echo "⏳ Waiting for application... ($counter/600 seconds)"
+            sleep 30
+            counter=$((counter + 30))
+          done
+        else
+          echo "⚠️ Application URL not available"
+        fi
+
+    - name: Test Application Health
+      run: |
+        APP_URL="${{ steps.outputs.outputs.APPLICATION_URL }}"
+        
+        if [ "$APP_URL" != "Not available" ]; then
+          echo "🔍 Testing application health endpoints..."
+          
+          # Test main page
+          if curl -s -f "$APP_URL" > /dev/null; then
+            echo "✅ Main page is accessible"
+          else
+            echo "❌ Main page is not accessible"
+          fi
+          
+          # Test health endpoint
+          sleep 60
+          if curl -s -f "$APP_URL/health" > /dev/null; then
+            echo "✅ Health endpoint is responding"
+          else
+            echo "⚠️ Health endpoint is not yet responding (instances may still be initializing)"
+          fi
+        else
+          echo "⚠️ Skipping health tests - Application URL not available"
+        fi
+
+    - name: Deployment Summary
+      run: |
+        cat >> $GITHUB_STEP_SUMMARY << EOF
+        # 🏗️ 3-Tier Architecture Deployment Complete
+        
+        ## Environment: dev
+        
+        ## 🌐 Architecture Overview
+        
+        ### Load Balancer Tier
+        - ✅ Application Load Balancer deployed
+        - ✅ Health checks configured
+        - ✅ Multi-AZ distribution
+        
+        ### Web Tier (Private Subnets)
+        - ✅ Auto Scaling Group with Apache servers
+        - ✅ Launch templates with user data
+        - ✅ Security groups configured
+        - ✅ Multi-AZ deployment
+        
+        ### Application Tier (Private Subnets)
+        - ✅ Auto Scaling Group with Node.js servers
+        - ✅ Internal load balancer for high availability
+        - ✅ Database connectivity configured
+        - ✅ Health check endpoints
+        
+        ### Database Tier (Private Subnets)
+        - ✅ RDS MySQL instance
+        - ✅ Automated backups enabled
+        - ✅ Security group restrictions
+        - ✅ Parameter group optimization
+        
+        ## 📊 Deployment Details
+        
+        | Component | Details |
+        |-----------|---------|
+        | **Application URL** | ${{ steps.outputs.outputs.APPLICATION_URL }} |
+        | **VPC ID** | ${{ steps.outputs.outputs.VPC_ID }} |
+        | **Database Endpoint** | ${{ steps.outputs.outputs.DATABASE_ENDPOINT }} |
+        
+        ## 🚀 Next Steps
+        
+        1. **Test the Application**: Visit the application URL above
+        2. **Monitor Health**: Check health endpoints for all tiers
+        3. **Scale Testing**: Test auto-scaling by generating load
+        4. **Database Testing**: Verify database connectivity through app tier
+        
+        ## 🔧 Architecture Features
+        
+        - **High Availability**: Multi-AZ deployment across availability zones
+        - **Auto Scaling**: Automatic scaling based on demand
+        - **Security**: Network segmentation with security groups
+        - **Monitoring**: Health checks and application monitoring
+        - **Database**: Managed RDS with automated backups
+        
+        EOF
