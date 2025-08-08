@@ -607,33 +607,7 @@ resource "aws_cloudfront_distribution" "static_website" {
   })
 }
 
-# S3 bucket policy to allow CloudFront access via OAC
-resource "aws_s3_bucket_policy" "static_website_cloudfront" {
-  count  = var.cloudfront_distribution_arn != "" ? 1 : 0
-  bucket = aws_s3_bucket.static_website.id
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "AllowCloudFrontServicePrincipal"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
-        }
-        Action   = "s3:GetObject"
-        Resource = "${aws_s3_bucket.static_website.arn}/*"
-        Condition = {
-          StringEquals = {
-            "AWS:SourceArn" = var.cloudfront_distribution_arn
-          }
-        }
-      }
-    ]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.static_website]
-}
 
 # SNS Topic for S3 notifications (for main bucket only)
 resource "aws_sns_topic" "s3_notifications" {

@@ -31,6 +31,12 @@ variable "enable_cross_region_replication" {
 
 
 
+variable "cloudfront_distribution_arn" {
+  description = "CloudFront distribution ARN for bucket policy"
+  type        = string
+  default     = ""
+}
+
 variable "common_tags" {
   description = "Common tags to be applied to all resources"
   type        = map(string)
@@ -61,8 +67,3 @@ variable "bucket_config" {
   }
 }
 
-variable "cloudfront_distribution_arn" {
-  description = "ARN of the CloudFront distribution for S3 bucket policy"
-  type        = string
-  default     = ""
-}

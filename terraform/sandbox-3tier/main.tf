@@ -772,7 +772,6 @@ module "storage" {
   log_retention_days              = 30   # Reduced for sandbox
   backup_retention_days           = 90   # Reduced for sandbox
   enable_cross_region_replication = false
-  cloudfront_distribution_arn     = module.cdn.cloudfront_distribution_arn
 
   bucket_config = {
     versioning_enabled   = true
@@ -808,6 +807,31 @@ module "cdn" {
     Project     = "3tier-architecture"
     ManagedBy   = "terraform"
   }
+}
+
+# S3 bucket policy to allow CloudFront access via OAC
+resource "aws_s3_bucket_policy" "static_website_cloudfront" {
+  bucket = module.storage.static_website_bucket_id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${module.storage.static_website_bucket_arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = module.cdn.cloudfront_distribution_arn
+          }
+        }
+      }
+    ]
+  })
 }
 
 # =============================================================================
