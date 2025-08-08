@@ -613,10 +613,16 @@ resource "aws_launch_template" "web" {
     name = data.aws_iam_instance_profile.lab_profile.name
   }
 
-  user_data = base64encode(templatefile("${path.module}/user_data/web_user_data.sh", {
-    app_internal_lb_dns = aws_lb.app_internal.dns_name
-    environment         = var.environment
-  }))
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    yum update -y
+    yum install -y httpd
+    systemctl start httpd
+    systemctl enable httpd
+    echo "<h1>Web Tier - ${var.environment}</h1>" > /var/www/html/index.html
+    echo "<p>Sandbox-optimized 3-tier architecture</p>" >> /var/www/html/index.html
+    EOF
+  )
 
   tag_specifications {
     resource_type = "instance"
@@ -646,13 +652,24 @@ resource "aws_launch_template" "app" {
     name = data.aws_iam_instance_profile.lab_profile.name
   }
 
-  user_data = base64encode(templatefile("${path.module}/user_data/app_user_data.sh", {
-    db_endpoint = aws_db_instance.main.endpoint
-    db_name     = local.db_name
-    db_username = local.db_username
-    db_password = local.db_password
-    environment = var.environment
-  }))
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    yum update -y
+    curl -sL https://rpm.nodesource.com/setup_18.x | bash -
+    yum install -y nodejs
+    mkdir -p /opt/app
+    cd /opt/app
+    echo '{"name":"app","version":"1.0.0","main":"server.js","dependencies":{"express":"^4.18.2"}}' > package.json
+    npm install
+    cat > server.js << 'APPEOF'
+    const express = require('express');
+    const app = express();
+    app.get('/health', (req, res) => res.json({status: 'healthy', tier: 'app', env: '${var.environment}'}));
+    app.listen(8080, () => console.log('App server running on port 8080'));
+    APPEOF
+    node server.js &
+    EOF
+  )
 
   tag_specifications {
     resource_type = "instance"
