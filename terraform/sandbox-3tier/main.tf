@@ -37,6 +37,13 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
+# Local values for template variables
+locals {
+  db_name     = "appdb"
+  db_username = "admin"
+  db_password = "TempPassword123!"
+}
+
 # Data sources
 data "aws_availability_zones" "available" {
   state = "available"
@@ -555,9 +562,9 @@ resource "aws_db_instance" "main" {
   storage_encrypted     = false # KMS restrictions in sandbox
 
   # Database settings
-  db_name  = "appdb"
-  username = "admin"
-  password = "TempPassword123!" # In production, use AWS Secrets Manager
+  db_name  = local.db_name
+  username = local.db_username
+  password = local.db_password # In production, use AWS Secrets Manager
 
   # Network settings
   db_subnet_group_name   = aws_db_subnet_group.main.name
@@ -641,9 +648,9 @@ resource "aws_launch_template" "app" {
 
   user_data = base64encode(templatefile("${path.module}/user_data/app_user_data.sh", {
     db_endpoint = aws_db_instance.main.endpoint
-    db_name     = aws_db_instance.main.db_name
-    db_username = aws_db_instance.main.username
-    db_password = "TempPassword123!"
+    db_name     = local.db_name
+    db_username = local.db_username
+    db_password = local.db_password
     environment = var.environment
   }))
 
