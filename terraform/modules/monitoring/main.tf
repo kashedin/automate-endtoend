@@ -408,6 +408,3 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_read_latency" {
 
 # Data source for current region
 data "aws_region" "current" {}
-
-# Data source for current AWS account ID
-data "aws_caller_identity" "current" {}
