@@ -194,8 +194,7 @@ resource "aws_default_security_group" "default" {
 
 # VPC Flow Logs CloudWatch and KMS resources removed for sandbox compliance
 
-# Data source for current AWS account ID
-data "aws_caller_identity" "current" {}
+# Data source removed - no longer needed after VPC Flow Logs removal
 
 # VPC Flow Logs disabled for sandbox compliance
 # IAM role creation is restricted - would need custom permissions not available in LabRole
