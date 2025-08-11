@@ -383,6 +383,174 @@ if (Confirm-Action "Delete SNS topics?") {
 }
 
 # =============================================================================
+# 9. VPC AND NETWORKING RESOURCES
+# =============================================================================
+Write-Host "`nStep 9: VPC and Networking Resources" -ForegroundColor Yellow
+
+if (Confirm-Action "Delete VPCs and all networking resources (excluding default VPC)?") {
+    # List all VPCs (excluding default)
+    Execute-Command "aws ec2 describe-vpcs --query 'Vpcs[?IsDefault==``false``].{VpcId:VpcId,CidrBlock:CidrBlock,Tags:Tags[?Key==``Name``].Value|[0]}' --output table" "List custom VPCs"
+    
+    try {
+        # Get custom VPC IDs (non-default VPCs)
+        $vpcIds = aws ec2 describe-vpcs --query 'Vpcs[?IsDefault==`false`].VpcId' --output text 2>$null
+        
+        if ($vpcIds -and $vpcIds.Trim() -ne "") {
+            $vpcs = $vpcIds.Split("`t").Trim()
+            foreach ($vpcId in $vpcs) {
+                if ($vpcId) {
+                    Write-Host "Processing VPC: $vpcId" -ForegroundColor Cyan
+                    
+                    # 1. Delete NAT Gateways first (they take time to delete)
+                    Write-Host "  Deleting NAT Gateways in VPC: $vpcId" -ForegroundColor Cyan
+                    try {
+                        $natGateways = aws ec2 describe-nat-gateways --filter "Name=vpc-id,Values=$vpcId" --query 'NatGateways[?State!=`deleted`].NatGatewayId' --output text 2>$null
+                        if ($natGateways -and $natGateways.Trim() -ne "") {
+                            $natGwIds = $natGateways.Split("`t").Trim()
+                            foreach ($natGwId in $natGwIds) {
+                                if ($natGwId) {
+                                    Execute-Command "aws ec2 delete-nat-gateway --nat-gateway-id $natGwId" "Delete NAT Gateway: $natGwId"
+                                }
+                            }
+                            # Wait for NAT Gateways to delete
+                            Write-Host "  Waiting 60 seconds for NAT Gateways to delete..." -ForegroundColor Yellow
+                            if (-not $DryRun) {
+                                Start-Sleep -Seconds 60
+                            }
+                        }
+                    } catch {
+                        Write-Host "  Error processing NAT Gateways: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                    
+                    # 2. Delete Internet Gateways
+                    Write-Host "  Deleting Internet Gateways in VPC: $vpcId" -ForegroundColor Cyan
+                    try {
+                        $internetGateways = aws ec2 describe-internet-gateways --filters "Name=attachment.vpc-id,Values=$vpcId" --query 'InternetGateways[].InternetGatewayId' --output text 2>$null
+                        if ($internetGateways -and $internetGateways.Trim() -ne "") {
+                            $igwIds = $internetGateways.Split("`t").Trim()
+                            foreach ($igwId in $igwIds) {
+                                if ($igwId) {
+                                    Execute-Command "aws ec2 detach-internet-gateway --internet-gateway-id $igwId --vpc-id $vpcId" "Detach Internet Gateway: $igwId from VPC: $vpcId"
+                                    Execute-Command "aws ec2 delete-internet-gateway --internet-gateway-id $igwId" "Delete Internet Gateway: $igwId"
+                                }
+                            }
+                        }
+                    } catch {
+                        Write-Host "  Error processing Internet Gateways: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                    
+                    # 3. Delete VPC Endpoints
+                    Write-Host "  Deleting VPC Endpoints in VPC: $vpcId" -ForegroundColor Cyan
+                    try {
+                        $vpcEndpoints = aws ec2 describe-vpc-endpoints --filters "Name=vpc-id,Values=$vpcId" --query 'VpcEndpoints[].VpcEndpointId' --output text 2>$null
+                        if ($vpcEndpoints -and $vpcEndpoints.Trim() -ne "") {
+                            $endpointIds = $vpcEndpoints.Split("`t").Trim()
+                            foreach ($endpointId in $endpointIds) {
+                                if ($endpointId) {
+                                    Execute-Command "aws ec2 delete-vpc-endpoint --vpc-endpoint-id $endpointId" "Delete VPC Endpoint: $endpointId"
+                                }
+                            }
+                        }
+                    } catch {
+                        Write-Host "  Error processing VPC Endpoints: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                    
+                    # 4. Delete Security Groups (except default)
+                    Write-Host "  Deleting Security Groups in VPC: $vpcId" -ForegroundColor Cyan
+                    try {
+                        $securityGroups = aws ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcId" --query 'SecurityGroups[?GroupName!=`default`].GroupId' --output text 2>$null
+                        if ($securityGroups -and $securityGroups.Trim() -ne "") {
+                            $sgIds = $securityGroups.Split("`t").Trim()
+                            foreach ($sgId in $sgIds) {
+                                if ($sgId) {
+                                    Execute-Command "aws ec2 delete-security-group --group-id $sgId" "Delete Security Group: $sgId"
+                                }
+                            }
+                        }
+                    } catch {
+                        Write-Host "  Error processing Security Groups: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                    
+                    # 5. Delete Network ACLs (except default)
+                    Write-Host "  Deleting Network ACLs in VPC: $vpcId" -ForegroundColor Cyan
+                    try {
+                        $networkAcls = aws ec2 describe-network-acls --filters "Name=vpc-id,Values=$vpcId" --query 'NetworkAcls[?IsDefault==`false`].NetworkAclId' --output text 2>$null
+                        if ($networkAcls -and $networkAcls.Trim() -ne "") {
+                            $aclIds = $networkAcls.Split("`t").Trim()
+                            foreach ($aclId in $aclIds) {
+                                if ($aclId) {
+                                    Execute-Command "aws ec2 delete-network-acl --network-acl-id $aclId" "Delete Network ACL: $aclId"
+                                }
+                            }
+                        }
+                    } catch {
+                        Write-Host "  Error processing Network ACLs: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                    
+                    # 6. Delete Route Tables (except main route table)
+                    Write-Host "  Deleting Route Tables in VPC: $vpcId" -ForegroundColor Cyan
+                    try {
+                        $routeTables = aws ec2 describe-route-tables --filters "Name=vpc-id,Values=$vpcId" --query 'RouteTables[?Associations[0].Main!=`true`].RouteTableId' --output text 2>$null
+                        if ($routeTables -and $routeTables.Trim() -ne "") {
+                            $rtIds = $routeTables.Split("`t").Trim()
+                            foreach ($rtId in $rtIds) {
+                                if ($rtId) {
+                                    Execute-Command "aws ec2 delete-route-table --route-table-id $rtId" "Delete Route Table: $rtId"
+                                }
+                            }
+                        }
+                    } catch {
+                        Write-Host "  Error processing Route Tables: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                    
+                    # 7. Delete Subnets
+                    Write-Host "  Deleting Subnets in VPC: $vpcId" -ForegroundColor Cyan
+                    try {
+                        $subnets = aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpcId" --query 'Subnets[].SubnetId' --output text 2>$null
+                        if ($subnets -and $subnets.Trim() -ne "") {
+                            $subnetIds = $subnets.Split("`t").Trim()
+                            foreach ($subnetId in $subnetIds) {
+                                if ($subnetId) {
+                                    Execute-Command "aws ec2 delete-subnet --subnet-id $subnetId" "Delete Subnet: $subnetId"
+                                }
+                            }
+                        }
+                    } catch {
+                        Write-Host "  Error processing Subnets: $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                    
+                    # 8. Finally, delete the VPC
+                    Write-Host "  Deleting VPC: $vpcId" -ForegroundColor Cyan
+                    Execute-Command "aws ec2 delete-vpc --vpc-id $vpcId" "Delete VPC: $vpcId"
+                }
+            }
+        } else {
+            Write-Host "  No custom VPCs found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing VPCs: $($_.Exception.Message)" -ForegroundColor Red
+    }
+    
+    # Clean up any remaining Elastic IPs
+    Write-Host "  Releasing unassociated Elastic IPs..." -ForegroundColor Cyan
+    try {
+        $elasticIps = aws ec2 describe-addresses --query 'Addresses[?AssociationId==null].AllocationId' --output text 2>$null
+        if ($elasticIps -and $elasticIps.Trim() -ne "") {
+            $eipIds = $elasticIps.Split("`t").Trim()
+            foreach ($eipId in $eipIds) {
+                if ($eipId) {
+                    Execute-Command "aws ec2 release-address --allocation-id $eipId" "Release Elastic IP: $eipId"
+                }
+            }
+        } else {
+            Write-Host "  No unassociated Elastic IPs found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing Elastic IPs: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+# =============================================================================
 # FINAL VERIFICATION
 # =============================================================================
 Write-Host "`nFinal Verification" -ForegroundColor Yellow
@@ -440,6 +608,18 @@ try {
     Write-Host "WARNING: Could not check RDS instances" -ForegroundColor Yellow
 }
 
+# Check VPCs
+try {
+    $remainingVPCs = aws ec2 describe-vpcs --query 'Vpcs[?IsDefault==`false`].VpcId' --output text 2>$null
+    if ($remainingVPCs -and $remainingVPCs.Trim() -ne "") {
+        Write-Host "WARNING: Custom VPCs still exist: $remainingVPCs" -ForegroundColor Yellow
+    } else {
+        Write-Host "SUCCESS: No custom VPCs found" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "WARNING: Could not check VPCs" -ForegroundColor Yellow
+}
+
 Write-Host "`nAWS CLI cleanup completed!" -ForegroundColor Green
 Write-Host "Summary:" -ForegroundColor Yellow
 Write-Host "- CloudFront distributions processed" -ForegroundColor White
@@ -450,6 +630,7 @@ Write-Host "- RDS databases deleted" -ForegroundColor White
 Write-Host "- S3 buckets emptied and removed" -ForegroundColor White
 Write-Host "- CloudWatch resources cleaned" -ForegroundColor White
 Write-Host "- SNS topics deleted" -ForegroundColor White
+Write-Host "- VPCs and networking resources deleted" -ForegroundColor White
 
 Write-Host "`nNext steps:" -ForegroundColor Cyan
 Write-Host "1. Wait 5-10 minutes for all deletions to complete" -ForegroundColor White
