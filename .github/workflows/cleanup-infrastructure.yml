@@ -1,0 +1,304 @@
+name: Cleanup Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to cleanup'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+        - both
+      confirm_destruction:
+        description: 'Type DESTROY to confirm resource destruction'
+        required: true
+        type: string
+      force_cleanup:
+        description: 'Force cleanup without destroy plan'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  TF_VERSION: '1.6.0'
+  AWS_DEFAULT_REGION: us-west-2
+
+jobs:
+  validate-confirmation:
+    name: Validate Destruction Confirmation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Validate Confirmation
+      run: |
+        if [ "${{ github.event.inputs.confirm_destruction }}" != "DESTROY" ]; then
+          echo "❌ Destruction not confirmed. You must type 'DESTROY' to proceed."
+          echo "Provided: '${{ github.event.inputs.confirm_destruction }}'"
+          exit 1
+        fi
+        echo "✅ Destruction confirmed"
+
+  cleanup-dev:
+    name: Cleanup Development Environment
+    runs-on: ubuntu-latest
+    needs: validate-confirmation
+    if: ${{ github.event.inputs.environment == 'dev' || github.event.inputs.environment == 'both' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init - Dev
+      working-directory: terraform/environments/dev
+      run: terraform init
+
+    - name: Terraform Plan Destroy - Dev
+      working-directory: terraform/environments/dev
+      run: |
+        echo "🔥 Planning destruction of DEV environment..."
+        terraform plan -destroy -out=destroy.tfplan
+
+    - name: Terraform Destroy - Dev
+      working-directory: terraform/environments/dev
+      run: |
+        echo "💥 Destroying DEV environment resources..."
+        if [ "${{ github.event.inputs.force_cleanup }}" == "true" ]; then
+          terraform destroy -auto-approve
+        else
+          terraform apply -auto-approve destroy.tfplan
+        fi
+
+    - name: Verify Dev Cleanup
+      working-directory: terraform/environments/dev
+      run: |
+        echo "🔍 Verifying dev environment cleanup..."
+        # Check if any resources remain
+        if terraform show | grep -q "resource"; then
+          echo "⚠️ Some resources may still exist"
+          terraform show
+        else
+          echo "✅ Dev environment appears to be clean"
+        fi
+
+  cleanup-prod:
+    name: Cleanup Production Environment
+    runs-on: ubuntu-latest
+    needs: validate-confirmation
+    if: ${{ github.event.inputs.environment == 'prod' || github.event.inputs.environment == 'both' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ env.TF_VERSION }}
+
+    - name: Terraform Init - Prod
+      working-directory: terraform/environments/prod
+      run: terraform init
+
+    - name: Terraform Plan Destroy - Prod
+      working-directory: terraform/environments/prod
+      run: |
+        echo "🔥 Planning destruction of PROD environment..."
+        terraform plan -destroy -out=destroy.tfplan
+
+    - name: Terraform Destroy - Prod
+      working-directory: terraform/environments/prod
+      run: |
+        echo "💥 Destroying PROD environment resources..."
+        if [ "${{ github.event.inputs.force_cleanup }}" == "true" ]; then
+          terraform destroy -auto-approve
+        else
+          terraform apply -auto-approve destroy.tfplan
+        fi
+
+    - name: Verify Prod Cleanup
+      working-directory: terraform/environments/prod
+      run: |
+        echo "🔍 Verifying prod environment cleanup..."
+        # Check if any resources remain
+        if terraform show | grep -q "resource"; then
+          echo "⚠️ Some resources may still exist"
+          terraform show
+        else
+          echo "✅ Prod environment appears to be clean"
+        fi
+
+  cleanup-orphaned-resources:
+    name: Cleanup Orphaned Resources
+    runs-on: ubuntu-latest
+    needs: [cleanup-dev, cleanup-prod]
+    if: always() && needs.validate-confirmation.result == 'success'
+    
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-region: ${{ env.AWS_DEFAULT_REGION }}
+
+    - name: Check CloudFront Distributions
+      run: |
+        echo "📡 Checking for remaining CloudFront distributions..."
+        distributions=$(aws cloudfront list-distributions --query 'DistributionList.Items[?contains(Comment, `dev`) || contains(Comment, `prod`)].{Id:Id,Comment:Comment,Status:Status}' --output table 2>/dev/null || echo "None found")
+        echo "$distributions"
+        
+        if echo "$distributions" | grep -q "Id"; then
+          echo "⚠️ CloudFront distributions found. These may take time to delete automatically."
+          echo "::warning::CloudFront distributions still exist and may incur charges"
+        else
+          echo "✅ No related CloudFront distributions found"
+        fi
+
+    - name: Check S3 Buckets
+      run: |
+        echo "🪣 Checking for remaining S3 buckets..."
+        buckets=$(aws s3 ls | grep -E "(dev-|prod-)" || echo "None found")
+        echo "$buckets"
+        
+        if echo "$buckets" | grep -q "dev-\|prod-"; then
+          echo "⚠️ S3 buckets found that may be related to the infrastructure"
+          echo "::warning::S3 buckets still exist and may incur charges"
+          
+          # List bucket contents for verification
+          echo "$buckets" | while read -r line; do
+            if [[ "$line" =~ (dev-|prod-) ]]; then
+              bucket_name=$(echo "$line" | awk '{print $NF}')
+              echo "📋 Contents of $bucket_name:"
+              aws s3 ls "s3://$bucket_name" --recursive --human-readable --summarize || echo "  (empty or inaccessible)"
+            fi
+          done
+        else
+          echo "✅ No related S3 buckets found"
+        fi
+
+    - name: Check EC2 Instances
+      run: |
+        echo "🖥️ Checking for remaining EC2 instances..."
+        instances=$(aws ec2 describe-instances --query 'Reservations[*].Instances[?State.Name!=`terminated`].{InstanceId:InstanceId,State:State.Name,Name:Tags[?Key==`Name`].Value|[0]}' --output table 2>/dev/null || echo "None found")
+        echo "$instances"
+        
+        if echo "$instances" | grep -q "InstanceId"; then
+          echo "⚠️ EC2 instances found"
+          echo "::warning::EC2 instances still exist and may incur charges"
+        else
+          echo "✅ No EC2 instances found"
+        fi
+
+    - name: Check RDS Instances
+      run: |
+        echo "🗄️ Checking for remaining RDS instances..."
+        rds_instances=$(aws rds describe-db-instances --query 'DBInstances[].{DBInstanceIdentifier:DBInstanceIdentifier,DBInstanceStatus:DBInstanceStatus}' --output table 2>/dev/null || echo "None found")
+        echo "$rds_instances"
+        
+        if echo "$rds_instances" | grep -q "DBInstanceIdentifier"; then
+          echo "⚠️ RDS instances found"
+          echo "::warning::RDS instances still exist and may incur charges"
+        else
+          echo "✅ No RDS instances found"
+        fi
+
+  cleanup-summary:
+    name: Cleanup Summary
+    runs-on: ubuntu-latest
+    needs: [cleanup-dev, cleanup-prod, cleanup-orphaned-resources]
+    if: always() && needs.validate-confirmation.result == 'success'
+    
+    steps:
+    - name: Generate Cleanup Summary
+      run: |
+        echo "# 🧹 Infrastructure Cleanup Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Cleanup Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment(s)**: ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Force Cleanup**: ${{ github.event.inputs.force_cleanup }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+        echo "- **Triggered by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## Cleanup Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Dev environment result
+        if [[ "${{ github.event.inputs.environment }}" == "dev" || "${{ github.event.inputs.environment }}" == "both" ]]; then
+          if [[ "${{ needs.cleanup-dev.result }}" == "success" ]]; then
+            echo "- ✅ **Dev Environment**: Successfully destroyed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ **Dev Environment**: Cleanup failed" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+        
+        # Prod environment result
+        if [[ "${{ github.event.inputs.environment }}" == "prod" || "${{ github.event.inputs.environment }}" == "both" ]]; then
+          if [[ "${{ needs.cleanup-prod.result }}" == "success" ]]; then
+            echo "- ✅ **Prod Environment**: Successfully destroyed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ❌ **Prod Environment**: Cleanup failed" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+        
+        # Orphaned resources check
+        if [[ "${{ needs.cleanup-orphaned-resources.result }}" == "success" ]]; then
+          echo "- ✅ **Orphaned Resources**: Check completed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "- ⚠️ **Orphaned Resources**: Check failed or skipped" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "1. **Verify AWS Console**: Check that all resources are deleted" >> $GITHUB_STEP_SUMMARY
+        echo "2. **Monitor Charges**: Ensure no ongoing AWS charges" >> $GITHUB_STEP_SUMMARY
+        echo "3. **Lab Session**: You can safely restart your AWS Academy lab" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## ⚠️ Important Notes" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- CloudFront distributions may take up to 24 hours to fully delete" >> $GITHUB_STEP_SUMMARY
+        echo "- S3 buckets with versioning may retain deleted object versions" >> $GITHUB_STEP_SUMMARY
+        echo "- Check the AWS Console manually if you see any warnings above" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Overall status
+        overall_success=true
+        if [[ "${{ needs.cleanup-dev.result }}" == "failure" || "${{ needs.cleanup-prod.result }}" == "failure" ]]; then
+          overall_success=false
+        fi
+        
+        if [[ "$overall_success" == "true" ]]; then
+          echo "## 🎉 Cleanup Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All requested environments have been successfully cleaned up!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ❌ Cleanup Status: PARTIAL FAILURE" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Some cleanup operations failed. Please check the logs and AWS Console." >> $GITHUB_STEP_SUMMARY
+        fi
