@@ -99,6 +99,7 @@ module "compute" {
   app_instance_type     = var.environment_config.instance_type
   web_asg_config        = var.web_asg_config
   app_asg_config        = var.app_asg_config
+  alb_logs_bucket       = module.storage.access_logs_bucket_name
   common_tags           = local.common_tags
 }
 

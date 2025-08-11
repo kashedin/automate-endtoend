@@ -362,9 +362,177 @@ if (Confirm-Action "Delete CloudWatch log groups and alarms?") {
 }
 
 # =============================================================================
-# 8. SNS TOPICS
+# 8. CLOUDFRONT ORIGIN ACCESS CONTROLS AND RESPONSE HEADERS POLICIES
 # =============================================================================
-Write-Host "`nStep 8: SNS Topics" -ForegroundColor Yellow
+Write-Host "`nStep 8: CloudFront Origin Access Controls and Response Headers Policies" -ForegroundColor Yellow
+
+if (Confirm-Action "Delete CloudFront Origin Access Controls and Response Headers Policies?") {
+    # Delete Origin Access Controls
+    Execute-Command "aws cloudfront list-origin-access-controls --query 'OriginAccessControlList.Items[?contains(Name, ``dev``) || contains(Name, ``prod``)].{Id:Id,Name:Name}' --output table" "List Origin Access Controls"
+    
+    try {
+        $oacIds = aws cloudfront list-origin-access-controls --query 'OriginAccessControlList.Items[?contains(Name, `dev`) || contains(Name, `prod`)].Id' --output text 2>$null
+        
+        if ($oacIds -and $oacIds.Trim() -ne "") {
+            $ids = $oacIds.Split("`t").Trim()
+            foreach ($id in $ids) {
+                if ($id) {
+                    Execute-Command "aws cloudfront delete-origin-access-control --id $id" "Delete Origin Access Control: $id"
+                }
+            }
+        } else {
+            Write-Host "  No Origin Access Controls found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing Origin Access Controls: $($_.Exception.Message)" -ForegroundColor Red
+    }
+    
+    # Delete Response Headers Policies
+    Execute-Command "aws cloudfront list-response-headers-policies --query 'ResponseHeadersPolicyList.Items[?contains(ResponseHeadersPolicy.ResponseHeadersPolicyConfig.Name, ``dev``) || contains(ResponseHeadersPolicy.ResponseHeadersPolicyConfig.Name, ``prod``)].{Id:ResponseHeadersPolicy.Id,Name:ResponseHeadersPolicy.ResponseHeadersPolicyConfig.Name}' --output table" "List Response Headers Policies"
+    
+    try {
+        $policyIds = aws cloudfront list-response-headers-policies --query 'ResponseHeadersPolicyList.Items[?contains(ResponseHeadersPolicy.ResponseHeadersPolicyConfig.Name, `dev`) || contains(ResponseHeadersPolicy.ResponseHeadersPolicyConfig.Name, `prod`)].ResponseHeadersPolicy.Id' --output text 2>$null
+        
+        if ($policyIds -and $policyIds.Trim() -ne "") {
+            $ids = $policyIds.Split("`t").Trim()
+            foreach ($id in $ids) {
+                if ($id) {
+                    Execute-Command "aws cloudfront delete-response-headers-policy --id $id" "Delete Response Headers Policy: $id"
+                }
+            }
+        } else {
+            Write-Host "  No Response Headers Policies found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing Response Headers Policies: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+# =============================================================================
+# 9. ELB TARGET GROUPS
+# =============================================================================
+Write-Host "`nStep 9: ELB Target Groups" -ForegroundColor Yellow
+
+if (Confirm-Action "Delete ELB Target Groups?") {
+    # List and delete Target Groups
+    Execute-Command "aws elbv2 describe-target-groups --query 'TargetGroups[?contains(TargetGroupName, ``dev``) || contains(TargetGroupName, ``prod``)].{Name:TargetGroupName,Arn:TargetGroupArn}' --output table" "List Target Groups"
+    
+    try {
+        $tgArns = aws elbv2 describe-target-groups --query 'TargetGroups[?contains(TargetGroupName, `dev`) || contains(TargetGroupName, `prod`)].TargetGroupArn' --output text 2>$null
+        
+        if ($tgArns -and $tgArns.Trim() -ne "") {
+            $arns = $tgArns.Split("`t").Trim()
+            foreach ($arn in $arns) {
+                if ($arn) {
+                    Execute-Command "aws elbv2 delete-target-group --target-group-arn $arn" "Delete Target Group: $arn"
+                }
+            }
+        } else {
+            Write-Host "  No Target Groups found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing Target Groups: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+# =============================================================================
+# 10. RDS PARAMETER GROUPS AND SUBNET GROUPS
+# =============================================================================
+Write-Host "`nStep 10: RDS Parameter Groups and Subnet Groups" -ForegroundColor Yellow
+
+if (Confirm-Action "Delete RDS Parameter Groups and Subnet Groups?") {
+    # Delete DB Parameter Groups
+    Execute-Command "aws rds describe-db-parameter-groups --query 'DBParameterGroups[?contains(DBParameterGroupName, ``dev``) || contains(DBParameterGroupName, ``prod``)].{Name:DBParameterGroupName,Family:DBParameterGroupFamily}' --output table" "List DB Parameter Groups"
+    
+    try {
+        $paramGroups = aws rds describe-db-parameter-groups --query 'DBParameterGroups[?contains(DBParameterGroupName, `dev`) || contains(DBParameterGroupName, `prod`)].DBParameterGroupName' --output text 2>$null
+        
+        if ($paramGroups -and $paramGroups.Trim() -ne "") {
+            $groups = $paramGroups.Split("`t").Trim()
+            foreach ($group in $groups) {
+                if ($group) {
+                    Execute-Command "aws rds delete-db-parameter-group --db-parameter-group-name $group" "Delete DB Parameter Group: $group"
+                }
+            }
+        } else {
+            Write-Host "  No DB Parameter Groups found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing DB Parameter Groups: $($_.Exception.Message)" -ForegroundColor Red
+    }
+    
+    # Delete DB Cluster Parameter Groups
+    Execute-Command "aws rds describe-db-cluster-parameter-groups --query 'DBClusterParameterGroups[?contains(DBClusterParameterGroupName, ``dev``) || contains(DBClusterParameterGroupName, ``prod``)].{Name:DBClusterParameterGroupName,Family:DBParameterGroupFamily}' --output table" "List DB Cluster Parameter Groups"
+    
+    try {
+        $clusterParamGroups = aws rds describe-db-cluster-parameter-groups --query 'DBClusterParameterGroups[?contains(DBClusterParameterGroupName, `dev`) || contains(DBClusterParameterGroupName, `prod`)].DBClusterParameterGroupName' --output text 2>$null
+        
+        if ($clusterParamGroups -and $clusterParamGroups.Trim() -ne "") {
+            $groups = $clusterParamGroups.Split("`t").Trim()
+            foreach ($group in $groups) {
+                if ($group) {
+                    Execute-Command "aws rds delete-db-cluster-parameter-group --db-cluster-parameter-group-name $group" "Delete DB Cluster Parameter Group: $group"
+                }
+            }
+        } else {
+            Write-Host "  No DB Cluster Parameter Groups found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing DB Cluster Parameter Groups: $($_.Exception.Message)" -ForegroundColor Red
+    }
+    
+    # Delete DB Subnet Groups
+    Execute-Command "aws rds describe-db-subnet-groups --query 'DBSubnetGroups[?contains(DBSubnetGroupName, ``dev``) || contains(DBSubnetGroupName, ``prod``)].{Name:DBSubnetGroupName,VpcId:VpcId}' --output table" "List DB Subnet Groups"
+    
+    try {
+        $subnetGroups = aws rds describe-db-subnet-groups --query 'DBSubnetGroups[?contains(DBSubnetGroupName, `dev`) || contains(DBSubnetGroupName, `prod`)].DBSubnetGroupName' --output text 2>$null
+        
+        if ($subnetGroups -and $subnetGroups.Trim() -ne "") {
+            $groups = $subnetGroups.Split("`t").Trim()
+            foreach ($group in $groups) {
+                if ($group) {
+                    Execute-Command "aws rds delete-db-subnet-group --db-subnet-group-name $group" "Delete DB Subnet Group: $group"
+                }
+            }
+        } else {
+            Write-Host "  No DB Subnet Groups found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing DB Subnet Groups: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+# =============================================================================
+# 11. SSM PARAMETERS
+# =============================================================================
+Write-Host "`nStep 11: SSM Parameters" -ForegroundColor Yellow
+
+if (Confirm-Action "Delete SSM Parameters?") {
+    # List and delete SSM Parameters
+    Execute-Command "aws ssm describe-parameters --query 'Parameters[?contains(Name, ``/dev/``) || contains(Name, ``/prod/``)].{Name:Name,Type:Type}' --output table" "List SSM Parameters"
+    
+    try {
+        $ssmParams = aws ssm describe-parameters --query 'Parameters[?contains(Name, `/dev/`) || contains(Name, `/prod/`)].Name' --output text 2>$null
+        
+        if ($ssmParams -and $ssmParams.Trim() -ne "") {
+            $params = $ssmParams.Split("`t").Trim()
+            foreach ($param in $params) {
+                if ($param) {
+                    Execute-Command "aws ssm delete-parameter --name `"$param`"" "Delete SSM Parameter: $param"
+                }
+            }
+        } else {
+            Write-Host "  No SSM Parameters found" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  Error processing SSM Parameters: $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+# =============================================================================
+# 12. SNS TOPICS
+# =============================================================================
+Write-Host "`nStep 12: SNS Topics" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete SNS topics?") {
     # List SNS topics
@@ -391,7 +559,7 @@ if (Confirm-Action "Delete SNS topics?") {
 # =============================================================================
 # 9. VPC AND NETWORKING RESOURCES
 # =============================================================================
-Write-Host "`nStep 9: VPC and Networking Resources" -ForegroundColor Yellow
+Write-Host "`nStep 13: VPC and Networking Resources" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete VPCs and all networking resources (excluding default VPC)?") {
     # List all VPCs (excluding default)

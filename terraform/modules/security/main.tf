@@ -256,6 +256,7 @@ resource "aws_ssm_parameter" "db_username" {
   description = "Database username for ${var.environment} environment"
   type        = "SecureString"
   value       = var.db_username
+  overwrite   = true
   # Using default AWS managed key for sandbox compliance
 
   tags = merge(var.common_tags, {
@@ -268,6 +269,7 @@ resource "aws_ssm_parameter" "db_password" {
   name        = "/${var.environment}/database/password"
   description = "Database password for ${var.environment} environment"
   type        = "SecureString"
+  overwrite   = true
   value       = random_password.db_password.result
   # Using default AWS managed key for sandbox compliance
 
@@ -282,6 +284,7 @@ resource "aws_ssm_parameter" "db_name" {
   description = "Database name for ${var.environment} environment"
   type        = "SecureString"
   value       = var.db_name
+  overwrite   = true
   # Using default AWS managed key for sandbox compliance
 
   tags = merge(var.common_tags, {
@@ -297,6 +300,7 @@ resource "aws_ssm_parameter" "app_config" {
   description = "Application parameter: ${each.key}"
   type        = "SecureString"
   value       = each.value.value
+  overwrite   = true
   # Using default AWS managed key for sandbox compliance
 
   tags = merge(var.common_tags, {
