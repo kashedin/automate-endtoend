@@ -459,78 +459,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "main" {
   }
 }
 
-resource "aws_s3_bucket_replication_configuration" "replication" {
-  count  = var.enable_cross_region_replication && var.bucket_config.destination_bucket != "" ? 1 : 0
-  bucket = aws_s3_bucket.main.id
-  role   = aws_iam_role.replication[0].arn
+# S3 replication configuration disabled for sandbox compliance
+# Cross-region replication requires custom IAM roles which are restricted
 
-  rule {
-    id     = "replication"
-    status = "Enabled"
-
-    destination {
-      bucket        = "arn:aws:s3:::${var.bucket_config.destination_bucket}"
-      storage_class = "STANDARD"
-    }
-  }
-
-  depends_on = [aws_s3_bucket_versioning.main]
-}
-
-resource "aws_iam_role" "replication" {
-  count = var.enable_cross_region_replication && var.bucket_config.destination_bucket != "" ? 1 : 0
-  name  = "${var.environment}-s3-replication-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "s3.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy" "replication" {
-  count = var.enable_cross_region_replication && var.bucket_config.destination_bucket != "" ? 1 : 0
-  name  = "${var.environment}-s3-replication-policy"
-  role  = aws_iam_role.replication[0].id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetReplicationConfiguration",
-          "s3:ListBucket"
-        ]
-        Resource = [aws_s3_bucket.main.arn]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObjectVersion",
-          "s3:GetObjectVersionAcl"
-        ]
-        Resource = ["${aws_s3_bucket.main.arn}/*"]
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:ReplicateObject",
-          "s3:ReplicateDelete",
-          "s3:ReplicateTags"
-        ]
-        Resource = ["arn:aws:s3:::${var.bucket_config.destination_bucket}/*"]
-      }
-    ]
-  })
-}
+# S3 replication IAM role creation disabled for sandbox compliance
+# Cross-region replication disabled - IAM role creation is restricted
 
 # CloudFront Origin Access Control for S3
 resource "aws_cloudfront_origin_access_control" "static_website" {

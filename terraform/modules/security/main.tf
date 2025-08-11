@@ -20,14 +20,9 @@ data "aws_iam_role" "lab_role" {
   name = var.lab_role_name
 }
 
-# Instance profile using existing lab role
-resource "aws_iam_instance_profile" "ec2_profile" {
-  name = "${var.environment}-ec2-instance-profile"
-  role = data.aws_iam_role.lab_role.name
-
-  tags = merge(var.common_tags, {
-    Name = "${var.environment}-ec2-instance-profile"
-  })
+# Use existing LabInstanceProfile as per sandbox constraints
+data "aws_iam_instance_profile" "lab_instance_profile" {
+  name = "LabInstanceProfile"
 }
 
 # Security Group for Application Load Balancer
@@ -244,48 +239,8 @@ resource "aws_vpc_security_group_ingress_rule" "database_from_app" {
   referenced_security_group_id = aws_security_group.app.id
 }
 
-# KMS key for SSM Parameter encryption
-resource "aws_kms_key" "ssm_parameters" {
-  description             = "KMS key for SSM Parameter encryption"
-  deletion_window_in_days = 7
-  enable_key_rotation     = true
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "Enable IAM User Permissions"
-        Effect = "Allow"
-        Principal = {
-          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
-        }
-        Action   = "kms:*"
-        Resource = "*"
-      },
-      {
-        Sid    = "Allow SSM Service"
-        Effect = "Allow"
-        Principal = {
-          Service = "ssm.amazonaws.com"
-        }
-        Action = [
-          "kms:Decrypt",
-          "kms:GenerateDataKey"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-
-  tags = merge(var.common_tags, {
-    Name = "${var.environment}-ssm-parameters-kms"
-  })
-}
-
-resource "aws_kms_alias" "ssm_parameters" {
-  name          = "alias/${var.environment}-ssm-parameters"
-  target_key_id = aws_kms_key.ssm_parameters.key_id
-}
+# KMS key creation disabled for sandbox compliance
+# Using default AWS managed keys for SSM parameters
 
 # Data source for current AWS account ID
 data "aws_caller_identity" "current" {}
@@ -302,7 +257,7 @@ resource "aws_ssm_parameter" "db_username" {
   description = "Database username for ${var.environment} environment"
   type        = "SecureString"
   value       = var.db_username
-  key_id      = aws_kms_key.ssm_parameters.arn
+  # Using default AWS managed key for sandbox compliance
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-db-username"
@@ -315,7 +270,7 @@ resource "aws_ssm_parameter" "db_password" {
   description = "Database password for ${var.environment} environment"
   type        = "SecureString"
   value       = random_password.db_password.result
-  key_id      = aws_kms_key.ssm_parameters.arn
+  # Using default AWS managed key for sandbox compliance
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-db-password"
@@ -328,7 +283,7 @@ resource "aws_ssm_parameter" "db_name" {
   description = "Database name for ${var.environment} environment"
   type        = "SecureString"
   value       = var.db_name
-  key_id      = aws_kms_key.ssm_parameters.arn
+  # Using default AWS managed key for sandbox compliance
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-db-name"
@@ -343,7 +298,7 @@ resource "aws_ssm_parameter" "app_config" {
   description = "Application parameter: ${each.key}"
   type        = "SecureString"
   value       = each.value.value
-  key_id      = aws_kms_key.ssm_parameters.arn
+  # Using default AWS managed key for sandbox compliance
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-app-${each.key}"

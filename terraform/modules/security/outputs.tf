@@ -11,13 +11,13 @@ output "lab_role_name" {
 }
 
 output "instance_profile_name" {
-  description = "Name of the EC2 instance profile"
-  value       = aws_iam_instance_profile.ec2_profile.name
+  description = "Name of the existing LabInstanceProfile"
+  value       = data.aws_iam_instance_profile.lab_instance_profile.name
 }
 
 output "instance_profile_arn" {
-  description = "ARN of the EC2 instance profile"
-  value       = aws_iam_instance_profile.ec2_profile.arn
+  description = "ARN of the existing LabInstanceProfile"
+  value       = data.aws_iam_instance_profile.lab_instance_profile.arn
 }
 
 output "alb_security_group_id" {
