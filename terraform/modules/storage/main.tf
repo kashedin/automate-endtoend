@@ -46,15 +46,7 @@ resource "aws_s3_bucket_public_access_block" "access_logs" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
-  bucket = aws_s3_bucket.access_logs.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
+# S3 encryption disabled for sandbox compliance
 
 # S3 Bucket for Static Website Hosting
 #checkov:skip=CKV_AWS_144:Cross-region replication not required for static website in lab environment
@@ -77,15 +69,7 @@ resource "aws_s3_bucket_versioning" "static_website" {
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "static_website" {
-  bucket = aws_s3_bucket.static_website.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
+# S3 encryption disabled for sandbox compliance
 
 resource "aws_s3_bucket_logging" "static_website" {
   bucket = aws_s3_bucket.static_website.id
@@ -160,15 +144,7 @@ resource "aws_s3_bucket_versioning" "logs_backups" {
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "logs_backups" {
-  bucket = aws_s3_bucket.logs_backups.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
+# S3 encryption disabled for sandbox compliance
 
 resource "aws_s3_bucket_logging" "logs_backups" {
   bucket = aws_s3_bucket.logs_backups.id
@@ -260,15 +236,7 @@ resource "aws_s3_bucket_versioning" "app_assets" {
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "app_assets" {
-  bucket = aws_s3_bucket.app_assets.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
+# S3 encryption disabled for sandbox compliance
 
 resource "aws_s3_bucket_logging" "app_assets" {
   bucket = aws_s3_bucket.app_assets.id
@@ -363,16 +331,8 @@ resource "aws_s3_bucket_versioning" "main" {
 # KMS key creation disabled for sandbox compliance
 # AWS KMS has read-only access in sandbox environment
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "main" {
-  count  = var.bucket_config.encryption_enabled ? 1 : 0
-  bucket = aws_s3_bucket.main.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"  # Using AES256 instead of KMS for sandbox compliance
-    }
-  }
-}
+# S3 encryption disabled for sandbox compliance
+# No server-side encryption configuration
 
 resource "aws_s3_bucket_logging" "main" {
   bucket = aws_s3_bucket.main.id
