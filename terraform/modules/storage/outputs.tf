@@ -48,6 +48,22 @@ output "app_assets_bucket_arn" {
   value       = aws_s3_bucket.app_assets.arn
 }
 
+# Access Logs Bucket
+output "access_logs_bucket_id" {
+  description = "ID of the access logs S3 bucket"
+  value       = aws_s3_bucket.access_logs.id
+}
+
+output "access_logs_bucket_name" {
+  description = "Name of the access logs S3 bucket"
+  value       = aws_s3_bucket.access_logs.id
+}
+
+output "access_logs_bucket_arn" {
+  description = "ARN of the access logs S3 bucket"
+  value       = aws_s3_bucket.access_logs.arn
+}
+
 # Bucket names for reference
 output "bucket_names" {
   description = "Map of all bucket names"
@@ -55,6 +71,7 @@ output "bucket_names" {
     static_website = aws_s3_bucket.static_website.id
     logs_backups   = aws_s3_bucket.logs_backups.id
     app_assets     = aws_s3_bucket.app_assets.id
+    access_logs    = aws_s3_bucket.access_logs.id
   }
 }
 
@@ -65,6 +82,7 @@ output "bucket_arns" {
     static_website = aws_s3_bucket.static_website.arn
     logs_backups   = aws_s3_bucket.logs_backups.arn
     app_assets     = aws_s3_bucket.app_assets.arn
+    access_logs    = aws_s3_bucket.access_logs.arn
   }
 }
 
