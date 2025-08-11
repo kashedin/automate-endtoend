@@ -6,6 +6,8 @@ A comprehensive DevOps project demonstrating automated end-to-end cloud infrastr
 
 This project implements a production-ready, highly available AWS infrastructure using Infrastructure as Code (Terraform) with automated CI/CD pipelines (GitHub Actions). It showcases modern DevOps practices including cloud architecture, automation, monitoring, and security best practices.
 
+<!-- Validation trigger: Updated 2025-01-08 -->
+
 ## Architecture
 
 The infrastructure deploys a three-tier web application architecture:
