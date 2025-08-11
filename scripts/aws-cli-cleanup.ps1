@@ -1,6 +1,12 @@
+# Use below command to run script in powershell
+#.\scripts\aws-cli-cleanup.ps1 -SkipConfirmation
+
 # AWS CLI Manual Cleanup Commands (PowerShell)
 # Direct AWS CLI commands to delete all infrastructure resources
 # Use this when Terraform cleanup fails or for manual verification
+
+
+
 
 param(
     [Parameter(Mandatory=$false)]
