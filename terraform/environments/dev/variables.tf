@@ -1,4 +1,5 @@
 # Development Environment Variables
+# Validation trigger: 2025-01-08
 
 variable "aws_region" {
   description = "AWS region for resources"
