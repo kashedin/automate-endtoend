@@ -23,11 +23,7 @@ variable "backup_retention_days" {
   default     = 365
 }
 
-variable "enable_cross_region_replication" {
-  description = "Enable cross-region replication for critical buckets"
-  type        = bool
-  default     = false
-}
+# Cross-region replication variable removed - disabled for sandbox compliance
 
 
 
