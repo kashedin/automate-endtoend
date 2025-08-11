@@ -242,8 +242,7 @@ resource "aws_vpc_security_group_ingress_rule" "database_from_app" {
 # KMS key creation disabled for sandbox compliance
 # Using default AWS managed keys for SSM parameters
 
-# Data source for current AWS account ID
-data "aws_caller_identity" "current" {}
+# Data source removed - not needed after KMS key removal for sandbox compliance
 
 # Random password for database
 resource "random_password" "db_password" {
