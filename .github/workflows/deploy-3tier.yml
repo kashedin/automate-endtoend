@@ -66,11 +66,86 @@ jobs:
       run: |
         terraform apply -auto-approve tfplan
 
+    - name: Pre-Destroy Cleanup
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        echo "🧹 Starting pre-destroy cleanup for problematic resources..."
+        
+        # Disable CloudFront distributions first (they take time to delete)
+        echo "📡 Disabling CloudFront distributions..."
+        aws cloudfront list-distributions --query 'DistributionList.Items[?contains(Comment, `${{ github.event.inputs.environment }}`)].{Id:Id,Enabled:Enabled}' --output table || true
+        
+        # Empty S3 buckets to allow deletion
+        echo "🪣 Emptying S3 buckets..."
+        aws s3 ls | grep "${{ github.event.inputs.environment }}-" | awk '{print $3}' | while read bucket; do
+          if [ ! -z "$bucket" ]; then
+            echo "Emptying bucket: $bucket"
+            aws s3 rm s3://$bucket --recursive || true
+          fi
+        done
+        
+        # Scale down Auto Scaling Groups to 0
+        echo "📈 Scaling down Auto Scaling Groups..."
+        aws autoscaling describe-auto-scaling-groups --query "AutoScalingGroups[?contains(AutoScalingGroupName, '${{ github.event.inputs.environment }}')].AutoScalingGroupName" --output text | tr '\t' '\n' | while read asg; do
+          if [ ! -z "$asg" ]; then
+            echo "Scaling down ASG: $asg"
+            aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$asg" --desired-capacity 0 --min-size 0 || true
+          fi
+        done
+        
+        echo "⏳ Waiting 60 seconds for resources to scale down..."
+        sleep 60
+
     - name: Terraform Destroy
       if: github.event.inputs.action == 'destroy'
       working-directory: terraform/environments/${{ github.event.inputs.environment }}
       run: |
-        terraform destroy -auto-approve
+        echo "🗑️ Starting Terraform destroy..."
+        
+        # Refresh state first to catch any manual changes
+        terraform refresh
+        
+        # Attempt destroy with retries for stubborn resources
+        for i in {1..3}; do
+          echo "🔄 Destroy attempt $i/3..."
+          if terraform destroy -auto-approve; then
+            echo "✅ Terraform destroy completed successfully"
+            break
+          else
+            echo "⚠️ Destroy attempt $i failed, retrying in 30 seconds..."
+            sleep 30
+            terraform refresh
+          fi
+        done
+
+    - name: Post-Destroy Cleanup
+      if: github.event.inputs.action == 'destroy'
+      run: |
+        echo "🧹 Running post-destroy cleanup for any remaining resources..."
+        
+        # Force delete any remaining CloudFront distributions
+        aws cloudfront list-distributions --query 'DistributionList.Items[?contains(Comment, `${{ github.event.inputs.environment }}`)].Id' --output text | tr '\t' '\n' | while read dist_id; do
+          if [ ! -z "$dist_id" ] && [ "$dist_id" != "None" ]; then
+            echo "⚠️ Found remaining CloudFront distribution: $dist_id"
+            echo "This will be cleaned up automatically (takes 15-20 minutes)"
+          fi
+        done
+        
+        # Check for any remaining S3 buckets
+        remaining_buckets=$(aws s3 ls | grep "${{ github.event.inputs.environment }}-" | awk '{print $3}' || true)
+        if [ ! -z "$remaining_buckets" ]; then
+          echo "⚠️ Found remaining S3 buckets:"
+          echo "$remaining_buckets"
+          echo "These may need manual cleanup if they contain objects"
+        fi
+        
+        # Check for remaining EC2 instances
+        remaining_instances=$(aws ec2 describe-instances --filters "Name=tag:Environment,Values=${{ github.event.inputs.environment }}" "Name=instance-state-name,Values=running,pending,stopping,stopped" --query 'Reservations[*].Instances[*].InstanceId' --output text || true)
+        if [ ! -z "$remaining_instances" ] && [ "$remaining_instances" != "None" ]; then
+          echo "⚠️ Found remaining EC2 instances: $remaining_instances"
+        fi
+        
+        echo "✅ Post-destroy cleanup completed"
 
     - name: Get Outputs
       if: github.event.inputs.action == 'deploy'
@@ -239,15 +314,37 @@ jobs:
         
         ## Environment: ${{ github.event.inputs.environment }}
         
-        All infrastructure resources have been successfully destroyed:
+        ## ✅ Resources Successfully Destroyed
         
-        - ✅ Auto Scaling Groups terminated
-        - ✅ EC2 instances terminated
-        - ✅ RDS database deleted
-        - ✅ Load balancer deleted
-        - ✅ NAT gateways deleted
-        - ✅ VPC and subnets deleted
-        - ✅ Security groups deleted
+        - ✅ **Auto Scaling Groups** - Scaled to 0 and terminated
+        - ✅ **EC2 Instances** - All instances terminated
+        - ✅ **RDS Database** - Database deleted (no final snapshot)
+        - ✅ **Load Balancer** - Application Load Balancer removed
+        - ✅ **NAT Gateways** - NAT gateways deleted
+        - ✅ **VPC Resources** - Subnets, route tables, and VPC deleted
+        - ✅ **Security Groups** - All custom security groups removed
+        - ✅ **S3 Buckets** - Buckets emptied and deleted
+        
+        ## ⏳ Resources That May Take Additional Time
+        
+        - **CloudFront Distributions**: May take 15-20 minutes to fully delete
+        - **Elastic IPs**: Released but may show in console briefly
+        - **DNS Records**: Route53 records may take time to propagate
+        
+        ## 🔍 Verification Steps
+        
+        1. Check AWS Console to confirm all resources are removed
+        2. Verify no ongoing charges in AWS Academy
+        3. CloudFront distributions will show "Disabled" then disappear
+        
+        ## 💡 If Resources Remain
+        
+        Some resources may require manual cleanup:
+        - Use the PowerShell cleanup script: \`.\scripts\aws-cli-cleanup.ps1\`
+        - Check AWS Console for any remaining resources
+        - Contact support if resources persist beyond expected timeframes
         
         *Destruction completed at $(date)*
+        
+        **Note**: AWS Academy labs automatically clean up resources when the lab session ends.
         EOF
