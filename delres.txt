@@ -1,0 +1,146 @@
+╷
+│ Error: creating CloudFront Origin Access Control (dev-3tier-s3-oac): operation error CloudFront: CreateOriginAccessControl, https response error StatusCode: 409, RequestID: a0ba1b0e-e6dc-4a01-a4ac-1892fb0ce360, OriginAccessControlAlreadyExists: An origin access control with the same name already exists.
+│ 
+│   with module.cdn.aws_cloudfront_origin_access_control.s3_oac,
+│   on ../../modules/cdn/main.tf line 16, in resource "aws_cloudfront_origin_access_control" "s3_oac":
+│   16: resource "aws_cloudfront_origin_access_control" "s3_oac" {
+│ 
+╵
+╷
+│ Error: creating CloudFront Response Headers Policy (dev-3tier-security-headers): operation error CloudFront: CreateResponseHeadersPolicy, https response error StatusCode: 409, RequestID: 92e7f890-2512-43a7-9146-ca4181a9b2ea, ResponseHeadersPolicyAlreadyExists: Another response headers policy with the same name already exists within the aws account.
+│ 
+│   with module.cdn.aws_cloudfront_response_headers_policy.security_headers,
+│   on ../../modules/cdn/main.tf line 25, in resource "aws_cloudfront_response_headers_policy" "security_headers":
+│   25: resource "aws_cloudfront_response_headers_policy" "security_headers" {
+│ 
+╵
+╷
+│ Error: modifying ELBv2 Load Balancer (arn:aws:elasticloadbalancing:***:910079942078:loadbalancer/app/dev-alb/949c1c53e626236a) attributes: operation error Elastic Load Balancing v2: ModifyLoadBalancerAttributes, https response error StatusCode: 400, RequestID: 5018a56d-d030-41a7-8fe5-1cc6cb558dfd, api error ValidationError: The key 'access_logs.s3.bucket' must set in order to enable access logs
+│ 
+│   with module.compute.aws_lb.main,
+│   on ../../modules/compute/main.tf line 223, in resource "aws_lb" "main":
+│  223: resource "aws_lb" "main" {
+│ 
+╵
+╷
+│ Error: ELBv2 Target Group (dev-web-tg) already exists
+│ 
+│   with module.compute.aws_lb_target_group.web,
+│   on ../../modules/compute/main.tf line 245, in resource "aws_lb_target_group" "web":
+│  245: resource "aws_lb_target_group" "web" {
+│ 
+╵
+╷
+│ Error: creating RDS DB Subnet Group (dev-aurora-subnet-group): operation error RDS: CreateDBSubnetGroup, https response error StatusCode: 400, RequestID: da2b6a13-1588-4b43-a7c1-06f58d3b7074, DBSubnetGroupAlreadyExists: The DB subnet group 'dev-aurora-subnet-group' already exists.
+│ 
+│   with module.database.aws_db_subnet_group.aurora,
+│   on ../../modules/database/main.tf line 19, in resource "aws_db_subnet_group" "aurora":
+│   19: resource "aws_db_subnet_group" "aurora" {
+│ 
+╵
+╷
+│ Error: creating RDS Cluster Parameter Group (dev-aurora-cluster-params): operation error RDS: CreateDBClusterParameterGroup, https response error StatusCode: 400, RequestID: c00375c0-8f4e-4742-ac63-e2167db1fe0a, DBParameterGroupAlreadyExists: Parameter group dev-aurora-cluster-params already exists
+│ 
+│   with module.database.aws_rds_cluster_parameter_group.aurora,
+│   on ../../modules/database/main.tf line 29, in resource "aws_rds_cluster_parameter_group" "aurora":
+│   29: resource "aws_rds_cluster_parameter_group" "aurora" {
+│ 
+╵
+╷
+│ Error: creating RDS DB Parameter Group (dev-aurora-db-params): operation error RDS: CreateDBParameterGroup, https response error StatusCode: 400, RequestID: e28df327-efde-4e71-b26e-dfab97a379b5, DBParameterGroupAlreadyExists: Parameter group dev-aurora-db-params already exists
+│ 
+│   with module.database.aws_db_parameter_group.aurora,
+│   on ../../modules/database/main.tf line 60, in resource "aws_db_parameter_group" "aurora":
+│   60: resource "aws_db_parameter_group" "aurora" {
+│ 
+╵
+╷
+│ Error: creating SSM Parameter (/dev/database/username): operation error SSM: PutParameter, https response error StatusCode: 400, RequestID: 807ba89b-6702-4c9c-821d-272559a092bc, ParameterAlreadyExists: The parameter already exists. To overwrite this value, set the overwrite option in the request to true.
+│ 
+│   with module.security.aws_ssm_parameter.db_username,
+│   on ../../modules/security/main.tf line 254, in resource "aws_ssm_parameter" "db_username":
+│  254: resource "aws_ssm_parameter" "db_username" {
+│ 
+╵
+╷
+│ Error: creating SSM Parameter (/dev/database/password): operation error SSM: PutParameter, https response error StatusCode: 400, RequestID: 4302d4fa-8d5b-4bb2-aa31-2d5556215480, ParameterAlreadyExists: The parameter already exists. To overwrite this value, set the overwrite option in the request to true.
+│ 
+│   with module.security.aws_ssm_parameter.db_password,
+│   on ../../modules/security/main.tf line 267, in resource "aws_ssm_parameter" "db_password":
+│  267: resource "aws_ssm_parameter" "db_password" {
+│ 
+╵
+╷
+│ Error: creating SSM Parameter (/dev/database/name): operation error SSM: PutParameter, https response error StatusCode: 400, RequestID: 25fe6c0e-0f8c-40e3-a979-3a8cbdb11f4e, ParameterAlreadyExists: The parameter already exists. To overwrite this value, set the overwrite option in the request to true.
+│ 
+│   with module.security.aws_ssm_parameter.db_name,
+│   on ../../modules/security/main.tf line 280, in resource "aws_ssm_parameter" "db_name":
+│  280: resource "aws_ssm_parameter" "db_name" {
+│ 
+╵
+╷
+│ Error: creating SSM Parameter (/dev/app/max_connections): operation error SSM: PutParameter, https response error StatusCode: 400, RequestID: 14f5b134-031b-4b53-8ac7-57577f7b26d6, ParameterAlreadyExists: The parameter already exists. To overwrite this value, set the overwrite option in the request to true.
+│ 
+│   with module.security.aws_ssm_parameter.app_config["max_connections"],
+│   on ../../modules/security/main.tf line 293, in resource "aws_ssm_parameter" "app_config":
+│  293: resource "aws_ssm_parameter" "app_config" {
+│ 
+╵
+╷
+│ Error: creating SSM Parameter (/dev/app/log_level): operation error SSM: PutParameter, https response error StatusCode: 400, RequestID: 1cecc9e5-7923-44f1-bd9a-9ba93fe16212, ParameterAlreadyExists: The parameter already exists. To overwrite this value, set the overwrite option in the request to true.
+│ 
+│   with module.security.aws_ssm_parameter.app_config["log_level"],
+│   on ../../modules/security/main.tf line 293, in resource "aws_ssm_parameter" "app_config":
+│  293: resource "aws_ssm_parameter" "app_config" {
+│ 
+╵
+╷
+│ Error: reading S3 Bucket (dev-access-logs-202514151efc3a7c) object lock configuration: operation error S3: GetObjectLockConfiguration, https response error StatusCode: 403, RequestID: 7T5FF4WVCWZQM7VG, HostID: 0yZwvIEwvPfIGlbHMImH9shHlyNmkmt2AlMWE/OdEgU4klw4CJ86pA9a97wnGga0AFts/oFFISfwIdXgEDg1Lw==, api error AccessDenied: User: arn:aws:sts::910079942078:assumed-role/voclabs/user4066978=Kashif_Din is not authorized to perform: s3:GetBucketObjectLockConfiguration on resource: "arn:aws:s3:::dev-access-logs-202514151efc3a7c" with an explicit deny in an identity-based policy
+│ 
+│   with module.storage.aws_s3_bucket.access_logs,
+│   on ../../modules/storage/main.tf line 30, in resource "aws_s3_bucket" "access_logs":
+│   30: resource "aws_s3_bucket" "access_logs" {
+│ 
+╵
+╷
+│ Error: reading S3 Bucket (dev-static-website-202514151efc3a7c) object lock configuration: operation error S3: GetObjectLockConfiguration, https response error StatusCode: 403, RequestID: 7T595ECYY6NB8T0S, HostID: 663IcwCslZDBBuqLMCWq0RMneSRfAXg1i9p21jIEpuAENzeYdzMEXMabV9gB61mxKxiUQAcRlGw=, api error AccessDenied: User: arn:aws:sts::910079942078:assumed-role/voclabs/user4066978=Kashif_Din is not authorized to perform: s3:GetBucketObjectLockConfiguration on resource: "arn:aws:s3:::dev-static-website-202514151efc3a7c" with an explicit deny in an identity-based policy
+│ 
+│   with module.storage.aws_s3_bucket.static_website,
+│   on ../../modules/storage/main.tf line 55, in resource "aws_s3_bucket" "static_website":
+│   55: resource "aws_s3_bucket" "static_website" {
+│ 
+╵
+╷
+│ Error: reading S3 Bucket (dev-logs-backups-202514151efc3a7c) object lock configuration: operation error S3: GetObjectLockConfiguration, https response error StatusCode: 403, RequestID: 7T52V7W4E842AM0D, HostID: RuAd55uoiU4L6v19RhIBbvqE916eJKzKnVvMSHvU+AqDE+ezMODaackcki5QkaJJDJGczJZc6AE=, api error AccessDenied: User: arn:aws:sts::910079942078:assumed-role/voclabs/user4066978=Kashif_Din is not authorized to perform: s3:GetBucketObjectLockConfiguration on resource: "arn:aws:s3:::dev-logs-backups-202514151efc3a7c" with an explicit deny in an identity-based policy
+│ 
+│   with module.storage.aws_s3_bucket.logs_backups,
+│   on ../../modules/storage/main.tf line 130, in resource "aws_s3_bucket" "logs_backups":
+│  130: resource "aws_s3_bucket" "logs_backups" {
+│ 
+╵
+╷
+│ Error: reading S3 Bucket (dev-app-assets-202514151efc3a7c) object lock configuration: operation error S3: GetObjectLockConfiguration, https response error StatusCode: 403, RequestID: 7T5E42CRP43MGWGA, HostID: 4O8LAoje31qByUsXv6wh1XpXGtp6DY3NovfOnxd0v0aky4XtQNXsSxY2vdfjvnYxWKdTm57VTAY=, api error AccessDenied: User: arn:aws:sts::910079942078:assumed-role/voclabs/user4066978=Kashif_Din is not authorized to perform: s3:GetBucketObjectLockConfiguration on resource: "arn:aws:s3:::dev-app-assets-202514151efc3a7c" with an explicit deny in an identity-based policy
+│ 
+│   with module.storage.aws_s3_bucket.app_assets,
+│   on ../../modules/storage/main.tf line 222, in resource "aws_s3_bucket" "app_assets":
+│  222: resource "aws_s3_bucket" "app_assets" {
+│ 
+╵
+╷
+│ Error: creating S3 Bucket (dev-main-bucket): operation error S3: CreateBucket, https response error StatusCode: 409, RequestID: RVN5VPNQ4VS0JTVE, HostID: 7qQ7Mo/m/kzkDgabTQJI/2/wQIsX6w58sFUEuWyxezgHDskJKj6UHVA4EvzeB2lK6/T6Z8LPMeAZh63tlDJxPQ==, BucketAlreadyExists: 
+│ 
+│   with module.storage.aws_s3_bucket.main,
+│   on ../../modules/storage/main.tf line 314, in resource "aws_s3_bucket" "main":
+│  314: resource "aws_s3_bucket" "main" {
+│ 
+╵
+╷
+│ Error: creating CloudFront Origin Access Control (dev-static-website-oac): operation error CloudFront: CreateOriginAccessControl, https response error StatusCode: 409, RequestID: 671f9286-5a44-4e32-9310-e9297d86f56e, OriginAccessControlAlreadyExists: An origin access control with the same name already exists.
+│ 
+│   with module.storage.aws_cloudfront_origin_access_control.static_website,
+│   on ../../modules/storage/main.tf line 382, in resource "aws_cloudfront_origin_access_control" "static_website":
+│  382: resource "aws_cloudfront_origin_access_control" "static_website" {
+│ 
+╵
+Error: Terraform exited with code 1.
+Error: Process completed with exit code 1.
