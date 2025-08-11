@@ -360,53 +360,8 @@ resource "aws_s3_bucket_versioning" "main" {
   }
 }
 
-# KMS key for S3 bucket encryption
-resource "aws_kms_key" "s3_main" {
-  count                   = var.bucket_config.encryption_enabled ? 1 : 0
-  description             = "KMS key for main S3 bucket encryption"
-  deletion_window_in_days = 7
-  enable_key_rotation     = true
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "Enable IAM User Permissions"
-        Effect = "Allow"
-        Principal = {
-          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
-        }
-        Action   = "kms:*"
-        Resource = "*"
-      },
-      {
-        Sid    = "Allow S3 Service"
-        Effect = "Allow"
-        Principal = {
-          Service = "s3.amazonaws.com"
-        }
-        Action = [
-          "kms:Encrypt",
-          "kms:Decrypt",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:DescribeKey"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-
-  tags = merge(var.common_tags, {
-    Name = "${var.environment}-s3-main-kms"
-  })
-}
-
-resource "aws_kms_alias" "s3_main" {
-  count         = var.bucket_config.encryption_enabled ? 1 : 0
-  name          = "alias/${var.environment}-s3-main"
-  target_key_id = aws_kms_key.s3_main[0].key_id
-}
+# KMS key creation disabled for sandbox compliance
+# AWS KMS has read-only access in sandbox environment
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "main" {
   count  = var.bucket_config.encryption_enabled ? 1 : 0
@@ -414,10 +369,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "main" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.s3_main[0].arn
+      sse_algorithm = "AES256"  # Using AES256 instead of KMS for sandbox compliance
     }
-    bucket_key_enabled = true
   }
 }
 
