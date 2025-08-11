@@ -23,8 +23,8 @@ if ($Help) {
     exit 0
 }
 
-Write-Host "🧹 AWS CLI Manual Cleanup Commands" -ForegroundColor Yellow
-Write-Host "==================================" -ForegroundColor Yellow
+Write-Host "AWS CLI Manual Cleanup Commands" -ForegroundColor Yellow
+Write-Host "================================" -ForegroundColor Yellow
 
 if ($DryRun) {
     Write-Host "DRY RUN MODE - Commands will be displayed but not executed" -ForegroundColor Cyan
@@ -48,8 +48,8 @@ function Execute-Command {
         [string]$Description
     )
     
-    Write-Host "📋 $Description" -ForegroundColor Cyan
-    Write-Host "Command: $Command" -ForegroundColor White
+    Write-Host "Command: $Description" -ForegroundColor Cyan
+    Write-Host "Executing: $Command" -ForegroundColor White
     
     if ($DryRun) {
         Write-Host "  [DRY RUN] Command not executed" -ForegroundColor Yellow
@@ -58,34 +58,34 @@ function Execute-Command {
     
     try {
         $result = Invoke-Expression $Command
-        Write-Host "  ✅ Success" -ForegroundColor Green
+        Write-Host "  Success" -ForegroundColor Green
         if ($result) {
             Write-Host $result
         }
         return $true
     } catch {
-        Write-Host "  ❌ Failed (may not exist): $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Failed (may not exist): $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
 
-Write-Host "`n⚠️  WARNING: This will delete ALL infrastructure resources!" -ForegroundColor Red
+Write-Host "`nWARNING: This will delete ALL infrastructure resources!" -ForegroundColor Red
 Write-Host "This includes CloudFront, ALB, EC2, RDS, S3, VPC, and all data!" -ForegroundColor Yellow
 
 if (-not $SkipConfirmation) {
     $finalConfirmation = Read-Host "`nType 'DELETE ALL' to confirm complete resource destruction"
     if ($finalConfirmation -ne "DELETE ALL") {
-        Write-Host "❌ Cleanup cancelled by user" -ForegroundColor Yellow
+        Write-Host "Cleanup cancelled by user" -ForegroundColor Yellow
         exit 1
     }
 }
 
-Write-Host "`n🚀 Starting AWS CLI cleanup..." -ForegroundColor Green
+Write-Host "`nStarting AWS CLI cleanup..." -ForegroundColor Green
 
 # =============================================================================
 # 1. CLOUDFRONT DISTRIBUTIONS
 # =============================================================================
-Write-Host "`n📡 Step 1: CloudFront Distributions" -ForegroundColor Yellow
+Write-Host "`nStep 1: CloudFront Distributions" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete CloudFront distributions?") {
     # List CloudFront distributions
@@ -116,7 +116,7 @@ if (Confirm-Action "Delete CloudFront distributions?") {
                         if ($etag) {
                             Execute-Command "aws cloudfront update-distribution --id $distId --distribution-config file://temp-dist-config-disabled-$distId.json --if-match $etag" "Disable distribution $distId"
                             
-                            Write-Host "  ⏳ Distribution $distId disabled. Waiting 5 minutes before deletion..." -ForegroundColor Yellow
+                            Write-Host "  Distribution $distId disabled. Waiting 5 minutes before deletion..." -ForegroundColor Yellow
                             Start-Sleep -Seconds 300  # Wait 5 minutes
                             
                             # Get new ETag after disable
@@ -133,17 +133,17 @@ if (Confirm-Action "Delete CloudFront distributions?") {
                 }
             }
         } else {
-            Write-Host "  ✅ No CloudFront distributions found" -ForegroundColor Green
+            Write-Host "  No CloudFront distributions found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing CloudFront distributions: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing CloudFront distributions: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # 2. APPLICATION LOAD BALANCERS
 # =============================================================================
-Write-Host "`n⚖️ Step 2: Application Load Balancers" -ForegroundColor Yellow
+Write-Host "`nStep 2: Application Load Balancers" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete Application Load Balancers?") {
     # List ALBs
@@ -161,17 +161,17 @@ if (Confirm-Action "Delete Application Load Balancers?") {
                 }
             }
         } else {
-            Write-Host "  ✅ No Application Load Balancers found" -ForegroundColor Green
+            Write-Host "  No Application Load Balancers found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing ALBs: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing ALBs: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # 3. AUTO SCALING GROUPS
 # =============================================================================
-Write-Host "`n📈 Step 3: Auto Scaling Groups" -ForegroundColor Yellow
+Write-Host "`nStep 3: Auto Scaling Groups" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete Auto Scaling Groups?") {
     # List ASGs
@@ -189,7 +189,7 @@ if (Confirm-Action "Delete Auto Scaling Groups?") {
                     Execute-Command "aws autoscaling update-auto-scaling-group --auto-scaling-group-name $name --desired-capacity 0 --min-size 0" "Scale down ASG: $name"
                     
                     # Wait for instances to terminate
-                    Write-Host "  ⏳ Waiting 30 seconds for instances to terminate..." -ForegroundColor Yellow
+                    Write-Host "  Waiting 30 seconds for instances to terminate..." -ForegroundColor Yellow
                     if (-not $DryRun) {
                         Start-Sleep -Seconds 30
                     }
@@ -199,17 +199,17 @@ if (Confirm-Action "Delete Auto Scaling Groups?") {
                 }
             }
         } else {
-            Write-Host "  ✅ No Auto Scaling Groups found" -ForegroundColor Green
+            Write-Host "  No Auto Scaling Groups found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing ASGs: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing ASGs: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # 4. EC2 INSTANCES
 # =============================================================================
-Write-Host "`n🖥️ Step 4: EC2 Instances" -ForegroundColor Yellow
+Write-Host "`nStep 4: EC2 Instances" -ForegroundColor Yellow
 
 if (Confirm-Action "Terminate EC2 instances?") {
     # List running instances
@@ -222,17 +222,17 @@ if (Confirm-Action "Terminate EC2 instances?") {
         if ($instanceIds -and $instanceIds.Trim() -ne "") {
             Execute-Command "aws ec2 terminate-instances --instance-ids $instanceIds" "Terminate instances: $instanceIds"
         } else {
-            Write-Host "  ✅ No EC2 instances found" -ForegroundColor Green
+            Write-Host "  No EC2 instances found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing EC2 instances: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing EC2 instances: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # 5. RDS DATABASES
 # =============================================================================
-Write-Host "`n🗄️ Step 5: RDS Databases" -ForegroundColor Yellow
+Write-Host "`nStep 5: RDS Databases" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete RDS databases?") {
     # List RDS instances
@@ -250,10 +250,10 @@ if (Confirm-Action "Delete RDS databases?") {
                 }
             }
         } else {
-            Write-Host "  ✅ No RDS instances found" -ForegroundColor Green
+            Write-Host "  No RDS instances found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing RDS instances: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing RDS instances: $($_.Exception.Message)" -ForegroundColor Red
     }
     
     # List and delete RDS clusters
@@ -270,17 +270,17 @@ if (Confirm-Action "Delete RDS databases?") {
                 }
             }
         } else {
-            Write-Host "  ✅ No RDS clusters found" -ForegroundColor Green
+            Write-Host "  No RDS clusters found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing RDS clusters: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing RDS clusters: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # 6. S3 BUCKETS
 # =============================================================================
-Write-Host "`n🪣 Step 6: S3 Buckets" -ForegroundColor Yellow
+Write-Host "`nStep 6: S3 Buckets" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete S3 buckets and all contents?") {
     # List S3 buckets
@@ -305,18 +305,18 @@ if (Confirm-Action "Delete S3 buckets and all contents?") {
                     }
                 }
             } else {
-                Write-Host "  ✅ No project S3 buckets found" -ForegroundColor Green
+                Write-Host "  No project S3 buckets found" -ForegroundColor Green
             }
         }
     } catch {
-        Write-Host "  ❌ Error processing S3 buckets: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing S3 buckets: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # 7. CLOUDWATCH RESOURCES
 # =============================================================================
-Write-Host "`n📊 Step 7: CloudWatch Resources" -ForegroundColor Yellow
+Write-Host "`nStep 7: CloudWatch Resources" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete CloudWatch log groups and alarms?") {
     # Delete log groups
@@ -333,10 +333,10 @@ if (Confirm-Action "Delete CloudWatch log groups and alarms?") {
                 }
             }
         } else {
-            Write-Host "  ✅ No CloudWatch log groups found" -ForegroundColor Green
+            Write-Host "  No CloudWatch log groups found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing CloudWatch log groups: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing CloudWatch log groups: $($_.Exception.Message)" -ForegroundColor Red
     }
     
     # Delete alarms
@@ -348,17 +348,17 @@ if (Confirm-Action "Delete CloudWatch log groups and alarms?") {
         if ($alarmNames -and $alarmNames.Trim() -ne "") {
             Execute-Command "aws cloudwatch delete-alarms --alarm-names $alarmNames" "Delete alarms: $alarmNames"
         } else {
-            Write-Host "  ✅ No CloudWatch alarms found" -ForegroundColor Green
+            Write-Host "  No CloudWatch alarms found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing CloudWatch alarms: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing CloudWatch alarms: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # 8. SNS TOPICS
 # =============================================================================
-Write-Host "`n📢 Step 8: SNS Topics" -ForegroundColor Yellow
+Write-Host "`nStep 8: SNS Topics" -ForegroundColor Yellow
 
 if (Confirm-Action "Delete SNS topics?") {
     # List SNS topics
@@ -375,17 +375,17 @@ if (Confirm-Action "Delete SNS topics?") {
                 }
             }
         } else {
-            Write-Host "  ✅ No SNS topics found" -ForegroundColor Green
+            Write-Host "  No SNS topics found" -ForegroundColor Green
         }
     } catch {
-        Write-Host "  ❌ Error processing SNS topics: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "  Error processing SNS topics: $($_.Exception.Message)" -ForegroundColor Red
     }
 }
 
 # =============================================================================
 # FINAL VERIFICATION
 # =============================================================================
-Write-Host "`n🔍 Final Verification" -ForegroundColor Yellow
+Write-Host "`nFinal Verification" -ForegroundColor Yellow
 
 Write-Host "Checking for remaining resources..." -ForegroundColor Cyan
 
@@ -393,24 +393,24 @@ Write-Host "Checking for remaining resources..." -ForegroundColor Cyan
 try {
     $remainingCF = aws cloudfront list-distributions --query 'DistributionList.Items[?contains(Comment, `dev`) || contains(Comment, `prod`)].Id' --output text 2>$null
     if ($remainingCF -and $remainingCF.Trim() -ne "") {
-        Write-Host "⚠️ CloudFront distributions still exist: $remainingCF" -ForegroundColor Yellow
+        Write-Host "WARNING: CloudFront distributions still exist: $remainingCF" -ForegroundColor Yellow
     } else {
-        Write-Host "✅ No CloudFront distributions found" -ForegroundColor Green
+        Write-Host "SUCCESS: No CloudFront distributions found" -ForegroundColor Green
     }
 } catch {
-    Write-Host "⚠️ Could not check CloudFront distributions" -ForegroundColor Yellow
+    Write-Host "WARNING: Could not check CloudFront distributions" -ForegroundColor Yellow
 }
 
 # Check EC2
 try {
     $remainingEC2 = aws ec2 describe-instances --filters 'Name=instance-state-name,Values=running,pending,stopping,stopped' --query 'Reservations[*].Instances[?Tags[?Key==`Environment` && (Value==`dev` || Value==`prod`)]].InstanceId' --output text 2>$null
     if ($remainingEC2 -and $remainingEC2.Trim() -ne "") {
-        Write-Host "⚠️ EC2 instances still exist: $remainingEC2" -ForegroundColor Yellow
+        Write-Host "WARNING: EC2 instances still exist: $remainingEC2" -ForegroundColor Yellow
     } else {
-        Write-Host "✅ No EC2 instances found" -ForegroundColor Green
+        Write-Host "SUCCESS: No EC2 instances found" -ForegroundColor Green
     }
 } catch {
-    Write-Host "⚠️ Could not check EC2 instances" -ForegroundColor Yellow
+    Write-Host "WARNING: Could not check EC2 instances" -ForegroundColor Yellow
 }
 
 # Check S3
@@ -419,29 +419,29 @@ try {
     if ($s3Output) {
         $remainingS3 = $s3Output | Select-String -Pattern "(dev-|prod-)" | ForEach-Object { ($_ -split '\s+')[-1] }
         if ($remainingS3) {
-            Write-Host "⚠️ S3 buckets still exist: $($remainingS3 -join ', ')" -ForegroundColor Yellow
+            Write-Host "WARNING: S3 buckets still exist: $($remainingS3 -join ', ')" -ForegroundColor Yellow
         } else {
-            Write-Host "✅ No S3 buckets found" -ForegroundColor Green
+            Write-Host "SUCCESS: No S3 buckets found" -ForegroundColor Green
         }
     }
 } catch {
-    Write-Host "⚠️ Could not check S3 buckets" -ForegroundColor Yellow
+    Write-Host "WARNING: Could not check S3 buckets" -ForegroundColor Yellow
 }
 
 # Check RDS
 try {
     $remainingRDS = aws rds describe-db-instances --query 'DBInstances[?contains(DBInstanceIdentifier, `dev`) || contains(DBInstanceIdentifier, `prod`)].DBInstanceIdentifier' --output text 2>$null
     if ($remainingRDS -and $remainingRDS.Trim() -ne "") {
-        Write-Host "⚠️ RDS instances still exist: $remainingRDS" -ForegroundColor Yellow
+        Write-Host "WARNING: RDS instances still exist: $remainingRDS" -ForegroundColor Yellow
     } else {
-        Write-Host "✅ No RDS instances found" -ForegroundColor Green
+        Write-Host "SUCCESS: No RDS instances found" -ForegroundColor Green
     }
 } catch {
-    Write-Host "⚠️ Could not check RDS instances" -ForegroundColor Yellow
+    Write-Host "WARNING: Could not check RDS instances" -ForegroundColor Yellow
 }
 
-Write-Host "`n🎉 AWS CLI cleanup completed!" -ForegroundColor Green
-Write-Host "📋 Summary:" -ForegroundColor Yellow
+Write-Host "`nAWS CLI cleanup completed!" -ForegroundColor Green
+Write-Host "Summary:" -ForegroundColor Yellow
 Write-Host "- CloudFront distributions processed" -ForegroundColor White
 Write-Host "- Load balancers deleted" -ForegroundColor White
 Write-Host "- Auto Scaling Groups removed" -ForegroundColor White
@@ -451,10 +451,10 @@ Write-Host "- S3 buckets emptied and removed" -ForegroundColor White
 Write-Host "- CloudWatch resources cleaned" -ForegroundColor White
 Write-Host "- SNS topics deleted" -ForegroundColor White
 
-Write-Host "`n💡 Next steps:" -ForegroundColor Cyan
+Write-Host "`nNext steps:" -ForegroundColor Cyan
 Write-Host "1. Wait 5-10 minutes for all deletions to complete" -ForegroundColor White
 Write-Host "2. Check AWS Console to verify all resources are gone" -ForegroundColor White
 Write-Host "3. Monitor for any remaining charges" -ForegroundColor White
 Write-Host "4. Restart AWS Academy lab session if needed" -ForegroundColor White
 
-Write-Host "`n✅ Cleanup process finished!" -ForegroundColor Green
+Write-Host "`nCleanup process finished!" -ForegroundColor Green
