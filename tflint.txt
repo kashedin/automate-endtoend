@@ -1,12 +1,20 @@
 # TFLint Status - FIXED
 
 ## Previous Issue (RESOLVED):
-Warning: main.tf:413:1: Warning - data "aws_caller_identity" "current" is declared but not used (terraform_unused_declarations)
+Error: Unsupported attribute - module.storage does not have an attribute named "access_logs_bucket_name"
 
 ## Resolution:
-- Removed unused `data "aws_caller_identity" "current"` from terraform/modules/monitoring/main.tf
-- TFLint validation should now pass without warnings
+- Added missing `access_logs_bucket_name` output to terraform/modules/storage/outputs.tf
+- Added `access_logs_bucket_id` and `access_logs_bucket_arn` outputs for completeness
+- Updated `bucket_names` and `bucket_arns` maps to include access_logs bucket
+- Fixed the ALB logs bucket configuration in compute module
 
 ## Status: ✅ READY FOR VALIDATION
 
-The TFLint issue has been resolved. The validation workflow should now pass all checks.
+The TFLint validation error has been resolved. The Terraform validation should now pass all checks.
+
+## What was fixed:
+1. ✅ Missing storage module output for access logs bucket
+2. ✅ ALB logs bucket parameter now properly references existing bucket
+3. ✅ All bucket outputs are now consistent and complete
+4. ✅ Terraform validation should pass without errors
