@@ -119,8 +119,8 @@ resource "aws_rds_cluster_instance" "aurora_writer" {
   db_parameter_group_name         = aws_db_parameter_group.aurora.name
   monitoring_interval             = var.aurora_config.monitoring_interval
   monitoring_role_arn             = var.monitoring_role_arn
-  performance_insights_enabled    = var.aurora_config.performance_insights_enabled
-  performance_insights_kms_key_id = var.kms_key_id
+  performance_insights_enabled    = false  # Disabled for AWS Academy compatibility
+  # performance_insights_kms_key_id = var.kms_key_id  # Not needed when PI is disabled
   auto_minor_version_upgrade      = true
 
   tags = merge(var.common_tags, {
