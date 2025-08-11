@@ -15,8 +15,8 @@ environment_config = {
   name                = "prod"
   instance_type       = "t3.small"
   min_capacity        = 2
-  max_capacity        = 4  # Reduced to comply with sandbox limits
-  desired_capacity    = 2  # Reduced to comply with sandbox limits
+  max_capacity        = 4 # Reduced to comply with sandbox limits
+  desired_capacity    = 2 # Reduced to comply with sandbox limits
   db_instance_class   = "db.t3.medium"
   backup_retention    = 30
   monitoring_enabled  = true
@@ -26,14 +26,14 @@ environment_config = {
 # Auto Scaling Group configurations (sandbox-compliant)
 web_asg_config = {
   min_size         = 2
-  max_size         = 4  # Reduced from 8 to comply with 6 instances/ASG limit
-  desired_capacity = 2  # Reduced from 3 to stay within 9 total instance limit
+  max_size         = 4 # Reduced from 8 to comply with 6 instances/ASG limit
+  desired_capacity = 2 # Reduced from 3 to stay within 9 total instance limit
 }
 
 app_asg_config = {
-  min_size         = 1  # Reduced from 2 to stay within 9 total instance limit
-  max_size         = 4  # Reduced from 6 to comply with 6 instances/ASG limit
-  desired_capacity = 2  # Reduced from 3 to stay within 9 total instance limit
+  min_size         = 1 # Reduced from 2 to stay within 9 total instance limit
+  max_size         = 4 # Reduced from 6 to comply with 6 instances/ASG limit
+  desired_capacity = 2 # Reduced from 3 to stay within 9 total instance limit
 }
 
 # Aurora configuration for production
