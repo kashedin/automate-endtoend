@@ -60,6 +60,3 @@ aurora_config = {
 
 # Alert email addresses (empty for dev)
 alert_email_addresses = []
-
-# ALB Configuration
-enable_deletion_protection = true

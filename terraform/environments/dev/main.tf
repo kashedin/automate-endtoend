@@ -24,6 +24,11 @@ terraform {
 provider "aws" {
   region = var.aws_region
 
+  # Skip certain validations for AWS sandbox environment
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+  skip_credentials_validation = false
+
   default_tags {
     tags = {
       Project     = "automated-cloud-infrastructure"
