@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
   }
 }
 
@@ -241,9 +245,14 @@ resource "aws_lb" "main" {
   })
 }
 
+# Random suffix for unique naming
+resource "random_id" "compute_suffix" {
+  byte_length = 4
+}
+
 # Target Group for Web Tier
 resource "aws_lb_target_group" "web" {
-  name     = "${var.environment}-web-tg"
+  name     = "${var.environment}-web-tg-${random_id.compute_suffix.hex}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = var.vpc_id

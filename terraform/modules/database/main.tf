@@ -15,9 +15,14 @@ terraform {
   }
 }
 
+# Random suffix for unique naming
+resource "random_id" "db_suffix" {
+  byte_length = 4
+}
+
 # DB Subnet Group
 resource "aws_db_subnet_group" "aurora" {
-  name       = "${var.environment}-aurora-subnet-group"
+  name       = "${var.environment}-aurora-subnet-group-${random_id.db_suffix.hex}"
   subnet_ids = var.private_subnet_ids
 
   tags = merge(var.common_tags, {
@@ -28,7 +33,7 @@ resource "aws_db_subnet_group" "aurora" {
 # Aurora Cluster Parameter Group
 resource "aws_rds_cluster_parameter_group" "aurora" {
   family      = "aurora-mysql8.0"
-  name        = "${var.environment}-aurora-cluster-params"
+  name        = "${var.environment}-aurora-cluster-params-${random_id.db_suffix.hex}"
   description = "Aurora cluster parameter group for ${var.environment}"
 
   parameter {
@@ -59,7 +64,7 @@ resource "aws_rds_cluster_parameter_group" "aurora" {
 # Aurora DB Parameter Group
 resource "aws_db_parameter_group" "aurora" {
   family = "aurora-mysql8.0"
-  name   = "${var.environment}-aurora-db-params"
+  name   = "${var.environment}-aurora-db-params-${random_id.db_suffix.hex}"
 
   parameter {
     name  = "innodb_print_all_deadlocks"

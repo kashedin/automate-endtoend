@@ -9,12 +9,21 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
   }
+}
+
+# Random suffix for unique naming
+resource "random_id" "cdn_suffix" {
+  byte_length = 4
 }
 
 # CloudFront Origin Access Control for S3
 resource "aws_cloudfront_origin_access_control" "s3_oac" {
-  name                              = "${var.project_name}-s3-oac"
+  name                              = "${var.project_name}-s3-oac-${random_id.cdn_suffix.hex}"
   description                       = "OAC for S3 static site access"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -23,7 +32,7 @@ resource "aws_cloudfront_origin_access_control" "s3_oac" {
 
 # Security headers policy
 resource "aws_cloudfront_response_headers_policy" "security_headers" {
-  name = "${var.project_name}-security-headers"
+  name = "${var.project_name}-security-headers-${random_id.cdn_suffix.hex}"
 
   security_headers_config {
     strict_transport_security {

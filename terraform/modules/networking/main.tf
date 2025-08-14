@@ -96,9 +96,9 @@ resource "aws_subnet" "private_data" {
   })
 }
 
-# NAT Gateways
+# NAT Gateways - Using single NAT for sandbox environment to avoid EIP limits
 resource "aws_eip" "nat" {
-  count = length(var.public_subnet_cidrs)
+  count = 1  # Reduced from length(var.public_subnet_cidrs) to avoid EIP limits
 
   domain     = "vpc"
   depends_on = [aws_internet_gateway.main]
@@ -109,7 +109,7 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_nat_gateway" "main" {
-  count = length(var.public_subnet_cidrs)
+  count = 1  # Reduced to single NAT gateway for sandbox
 
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
@@ -136,7 +136,7 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table" "private" {
-  count = length(var.public_subnet_cidrs)
+  count = 1  # Single route table for sandbox
 
   vpc_id = aws_vpc.main.id
 
@@ -162,21 +162,21 @@ resource "aws_route_table_association" "private_web" {
   count = length(aws_subnet.private_web)
 
   subnet_id      = aws_subnet.private_web[count.index].id
-  route_table_id = aws_route_table.private[count.index].id
+  route_table_id = aws_route_table.private[0].id  # Use single route table
 }
 
 resource "aws_route_table_association" "private_app" {
   count = length(aws_subnet.private_app)
 
   subnet_id      = aws_subnet.private_app[count.index].id
-  route_table_id = aws_route_table.private[count.index].id
+  route_table_id = aws_route_table.private[0].id  # Use single route table
 }
 
 resource "aws_route_table_association" "private_data" {
   count = length(aws_subnet.private_data)
 
   subnet_id      = aws_subnet.private_data[count.index].id
-  route_table_id = aws_route_table.private[count.index].id
+  route_table_id = aws_route_table.private[0].id  # Use single route table
 }
 
 # Restrict default security group (Checkov requirement)

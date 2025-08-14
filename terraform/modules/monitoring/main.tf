@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.1"
+    }
   }
 }
 
@@ -168,9 +172,14 @@ resource "aws_sns_topic_subscription" "email_alerts" {
   endpoint  = var.alert_email_addresses[count.index]
 }
 
+# Random suffix for unique naming
+resource "random_id" "monitoring_suffix" {
+  byte_length = 4
+}
+
 # CloudWatch Log Groups
 resource "aws_cloudwatch_log_group" "web_access" {
-  name              = "/aws/ec2/${var.environment}/web/httpd/access"
+  name              = "/aws/ec2/${var.environment}/web/httpd/access-${random_id.monitoring_suffix.hex}"
   retention_in_days = var.log_retention_days
   # KMS encryption removed for sandbox compliance
 
@@ -180,7 +189,7 @@ resource "aws_cloudwatch_log_group" "web_access" {
 }
 
 resource "aws_cloudwatch_log_group" "web_error" {
-  name              = "/aws/ec2/${var.environment}/web/httpd/error"
+  name              = "/aws/ec2/${var.environment}/web/httpd/error-${random_id.monitoring_suffix.hex}"
   retention_in_days = var.log_retention_days
   # KMS encryption removed for sandbox compliance
 
@@ -190,7 +199,7 @@ resource "aws_cloudwatch_log_group" "web_error" {
 }
 
 resource "aws_cloudwatch_log_group" "app_logs" {
-  name              = "/aws/ec2/${var.environment}/app/application"
+  name              = "/aws/ec2/${var.environment}/app/application-${random_id.monitoring_suffix.hex}"
   retention_in_days = var.log_retention_days
   # KMS encryption removed for sandbox compliance
 
