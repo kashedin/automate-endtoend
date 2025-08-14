@@ -111,17 +111,17 @@ resource "aws_rds_cluster" "aurora" {
 # Aurora Cluster Instances
 #checkov:skip=CKV_AWS_118:Enhanced monitoring disabled for cost optimization in lab environment
 resource "aws_rds_cluster_instance" "aurora_writer" {
-  identifier                      = "${var.environment}-aurora-writer"
-  cluster_identifier              = aws_rds_cluster.aurora.id
-  instance_class                  = var.aurora_config.instance_class
-  engine                          = aws_rds_cluster.aurora.engine
-  engine_version                  = aws_rds_cluster.aurora.engine_version
-  db_parameter_group_name         = aws_db_parameter_group.aurora.name
-  monitoring_interval             = var.aurora_config.monitoring_interval
-  monitoring_role_arn             = var.monitoring_role_arn
-  performance_insights_enabled    = false  # Disabled for AWS Academy compatibility
+  identifier                   = "${var.environment}-aurora-writer"
+  cluster_identifier           = aws_rds_cluster.aurora.id
+  instance_class               = var.aurora_config.instance_class
+  engine                       = aws_rds_cluster.aurora.engine
+  engine_version               = aws_rds_cluster.aurora.engine_version
+  db_parameter_group_name      = aws_db_parameter_group.aurora.name
+  monitoring_interval          = var.aurora_config.monitoring_interval
+  monitoring_role_arn          = var.monitoring_role_arn
+  performance_insights_enabled = false # Disabled for AWS Academy compatibility
   # performance_insights_kms_key_id = var.kms_key_id  # Not needed when PI is disabled
-  auto_minor_version_upgrade      = true
+  auto_minor_version_upgrade = true
 
   tags = merge(var.common_tags, {
     Name = "${var.environment}-aurora-writer"
