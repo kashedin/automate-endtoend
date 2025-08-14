@@ -248,6 +248,8 @@ resource "aws_vpc_security_group_ingress_rule" "database_from_app" {
 resource "random_password" "db_password" {
   length  = 16
   special = true
+  # Exclude characters that are not allowed in RDS passwords
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 # Parameter Store - Database Username
